@@ -14,6 +14,7 @@ import {
   Layers,
   Loader2,
   Info,
+  Search,
 } from "lucide-react";
 import {
   careerService,
@@ -26,6 +27,7 @@ export const CareerPathwaysPage: React.FC = () => {
   const [readinessFilter, setReadinessFilter] = useState<
     "ALL" | "HIGH_FIT" | "MODERATE_FIT" | "DEVELOPING"
   >("ALL");
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   const { data: recommendations, isLoading } = useQuery<
     CareerRecommendationItem[]
@@ -46,8 +48,16 @@ export const CareerPathwaysPage: React.FC = () => {
   }
 
   const filteredRoles = (recommendations || []).filter((r) => {
-    if (readinessFilter === "ALL") return true;
-    return r.readinessLevel === readinessFilter;
+    const matchesFilter =
+      readinessFilter === "ALL" || r.readinessLevel === readinessFilter;
+    const matchesSearch =
+      !searchQuery ||
+      r.careerRole.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (r.careerRole.category &&
+        r.careerRole.category
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase()));
+    return matchesFilter && matchesSearch;
   });
 
   const getReadinessBadge = (level: string) => {
@@ -77,15 +87,15 @@ export const CareerPathwaysPage: React.FC = () => {
         <div className="space-y-2 z-10">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-300 text-xs font-semibold">
             <Compass className="w-3.5 h-3.5 text-sky-400" />
-            <span>Deterministic Skill Intelligence</span>
+            <span>Deterministic Career Explorer</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
-            Career Role Compatibility & Skill Gaps
+            Career Role Explorer & Gap Diagnostics
           </h1>
           <p className="text-sm text-slate-400 max-w-2xl leading-relaxed">
-            Your verified skill scores are mathematically benchmarked against
-            industry standards. Identify matching proficiencies and targeted
-            gaps required to achieve 90%+ career alignment.
+            Your verified skill scores are benchmarked against industry
+            standards. Explore recommended pathways, inspect granular skill
+            gaps, and follow personalized learning roadmaps.
           </p>
         </div>
 
@@ -100,8 +110,8 @@ export const CareerPathwaysPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Filter Tabs */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      {/* Filter & Search Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center space-x-2 overflow-x-auto text-xs pb-1">
           {[
             { id: "ALL", label: `All Roles (${recommendations?.length || 0})` },
@@ -121,6 +131,18 @@ export const CareerPathwaysPage: React.FC = () => {
               {tab.label}
             </button>
           ))}
+        </div>
+
+        {/* Search */}
+        <div className="relative w-full sm:w-72">
+          <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-500" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search roles by title or domain..."
+            className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs placeholder-slate-500 focus:outline-none focus:border-sky-500"
+          />
         </div>
       </div>
 
@@ -153,9 +175,11 @@ export const CareerPathwaysPage: React.FC = () => {
                           </span>
                         )}
                       </div>
-                      <h3 className="text-xl font-extrabold text-white group-hover:text-sky-300 transition-colors pt-1">
-                        {rec.careerRole.title}
-                      </h3>
+                      <Link to={`/student/careers/${rec.careerRole.id}`}>
+                        <h3 className="text-xl font-extrabold text-white group-hover:text-sky-300 transition-colors pt-1">
+                          {rec.careerRole.title}
+                        </h3>
+                      </Link>
                       <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
                         {rec.careerRole.description ||
                           "Target technical and domain competencies required for industry placement."}
@@ -273,22 +297,22 @@ export const CareerPathwaysPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Bottom CTA */}
+                {/* Bottom Action CTAs */}
                 <div className="pt-4 border-t border-slate-850 flex items-center justify-between gap-3">
                   <button
                     type="button"
                     onClick={() => setSelectedRoleForModal(rec)}
-                    className="flex-1 py-2.5 px-4 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white text-xs font-semibold transition-all flex items-center justify-center space-x-1.5"
+                    className="flex-1 py-2.5 px-3 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white text-xs font-semibold transition-all flex items-center justify-center space-x-1.5"
                   >
                     <Layers className="w-3.5 h-3.5 text-sky-400" />
-                    <span>Inspect Full Gap Matrix</span>
+                    <span>Gap Matrix</span>
                   </button>
 
                   <Link
-                    to="/student/assessments"
-                    className="py-2.5 px-4 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-xs font-bold shadow-md shadow-sky-500/20 transition-all flex items-center space-x-1"
+                    to={`/student/careers/${rec.careerRole.id}`}
+                    className="flex-1 py-2.5 px-3 rounded-xl bg-gradient-to-r from-brand-600 to-sky-500 hover:from-brand-500 hover:to-sky-400 text-white text-xs font-bold shadow-md shadow-sky-500/20 transition-all flex items-center justify-center space-x-1"
                   >
-                    <span>Assess Gaps</span>
+                    <span>View Roadmap</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
                 </div>
@@ -299,11 +323,9 @@ export const CareerPathwaysPage: React.FC = () => {
       ) : (
         <div className="glass-panel p-12 rounded-3xl border border-slate-800 text-center max-w-md mx-auto space-y-3">
           <Compass className="w-10 h-10 text-slate-600 mx-auto" />
-          <h3 className="text-base font-bold text-white">
-            No roles in this readiness tier
-          </h3>
+          <h3 className="text-base font-bold text-white">No roles found</h3>
           <p className="text-xs text-slate-400">
-            Try selecting "All Roles" to view all available career pathways.
+            Try adjusting your readiness filter or search keywords.
           </p>
         </div>
       )}
@@ -412,20 +434,30 @@ export const CareerPathwaysPage: React.FC = () => {
               </p>
             </div>
 
-            <div className="flex items-center justify-end space-x-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setSelectedRoleForModal(null)}
-                className="px-4 py-2 rounded-xl bg-slate-900 text-slate-300 hover:text-white text-xs font-semibold"
-              >
-                Close Matrix
-              </button>
+            <div className="flex items-center justify-between pt-2">
               <Link
-                to="/student/assessments"
-                className="px-5 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-xs font-bold shadow-lg shadow-sky-500/20"
+                to={`/student/careers/${selectedRoleForModal.careerRole.id}`}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold flex items-center space-x-1.5"
               >
-                Take Assessments to Bridge Gaps
+                <span>View Full Roadmap</span>
+                <ArrowRight className="w-3.5 h-3.5" />
               </Link>
+
+              <div className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedRoleForModal(null)}
+                  className="px-4 py-2 rounded-xl bg-slate-900 text-slate-300 hover:text-white text-xs font-semibold"
+                >
+                  Close
+                </button>
+                <Link
+                  to="/student/assessments"
+                  className="px-5 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-xs font-bold shadow-lg shadow-sky-500/20"
+                >
+                  Bridge Gaps
+                </Link>
+              </div>
             </div>
           </div>
         </div>
