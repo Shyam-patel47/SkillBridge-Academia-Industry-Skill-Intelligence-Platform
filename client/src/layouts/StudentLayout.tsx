@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet } from "react-router-dom";
 import {
   Sparkles,
   LayoutDashboard,
+  User,
   BrainCircuit,
   Target,
   Compass,
@@ -23,6 +24,7 @@ export const StudentLayout: React.FC = () => {
 
   const navItems = [
     { name: "Dashboard", path: "/student/dashboard", icon: LayoutDashboard },
+    { name: "My Profile", path: "/student/profile", icon: User },
     {
       name: "Skill Assessment",
       path: "/student/assessments",
@@ -41,7 +43,7 @@ export const StudentLayout: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#060a14] text-slate-100 flex flex-col md:flex-row">
       {/* Mobile Top Header */}
-      <div className="md:hidden flex items-center justify-between px-4 py-3 border-b border-slate-850 bg-slate-950/90 backdrop-blur-md sticky top-0 z-40">
+      <div className="md:hidden flex items-center justify-between px-4 py-3 border-b border-slate-855 bg-slate-950/90 backdrop-blur-md sticky top-0 z-40">
         <Link to="/" className="flex items-center space-x-2">
           <div className="w-8 h-8 rounded-lg bg-sky-500/20 border border-sky-500/30 flex items-center justify-center">
             <Sparkles className="w-4 h-4 text-sky-400" />

@@ -16,6 +16,7 @@ import { InstitutionLayout } from "../layouts/InstitutionLayout";
 import { AdminLayout } from "../layouts/AdminLayout";
 
 import { StudentDashboardPage } from "../pages/dashboards/StudentDashboardPage";
+import { StudentProfilePage } from "../pages/student/StudentProfilePage";
 import { IndustryDashboardPage } from "../pages/dashboards/IndustryDashboardPage";
 import { InstitutionDashboardPage } from "../pages/dashboards/InstitutionDashboardPage";
 import { AdminDashboardPage } from "../pages/dashboards/AdminDashboardPage";
@@ -60,6 +61,7 @@ export const AppRoutes: React.FC = () => {
       >
         <Route index element={<Navigate to="/student/dashboard" replace />} />
         <Route path="dashboard" element={<StudentDashboardPage />} />
+        <Route path="profile" element={<StudentProfilePage />} />
         <Route
           path="assessments"
           element={
