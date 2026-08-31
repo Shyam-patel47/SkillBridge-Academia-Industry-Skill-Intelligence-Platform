@@ -223,6 +223,228 @@ export class StudentService {
   }
 
   /**
+   * Fetch detailed verified skills summary, categories, strengths and weak areas
+   */
+  async getStudentSkillsSummary(userId: string) {
+    const student = await this.getProfileByUserId(userId);
+
+    const studentSkills = await prisma.studentSkill.findMany({
+      where: { studentId: student.id },
+      include: {
+        skill: {
+          include: {
+            category: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+                icon: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { score: "desc" },
+    });
+
+    if (studentSkills.length === 0) {
+      return {
+        overallScore: 0,
+        totalSkills: 0,
+        verifiedSkillsCount: 0,
+        categories: [],
+        technicalSkills: [],
+        softSkills: [],
+        strengths: [],
+        weakSkills: [],
+        recentAssessmentsCount: 0,
+      };
+    }
+
+    // Overall mean score
+    const totalScoreSum = studentSkills.reduce(
+      (acc, curr) => acc + curr.score,
+      0,
+    );
+    const overallScore = Number(
+      (totalScoreSum / studentSkills.length).toFixed(1),
+    );
+    const verifiedSkillsCount = studentSkills.filter(
+      (s) => s.isVerified,
+    ).length;
+
+    // Group by category
+    const categoryMap = new Map<
+      string,
+      {
+        categoryId: string;
+        categoryName: string;
+        categorySlug: string;
+        icon?: string | null;
+        totalScore: number;
+        skills: Array<{
+          id: string;
+          skillId: string;
+          name: string;
+          slug: string;
+          score: number;
+          proficiency: ProficiencyLevel;
+          isVerified: boolean;
+          lastAssessedAt: Date | null;
+        }>;
+      }
+    >();
+
+    for (const ss of studentSkills) {
+      const cat = ss.skill.category;
+      if (!categoryMap.has(cat.id)) {
+        categoryMap.set(cat.id, {
+          categoryId: cat.id,
+          categoryName: cat.name,
+          categorySlug: cat.slug,
+          icon: cat.icon,
+          totalScore: 0,
+          skills: [],
+        });
+      }
+
+      const c = categoryMap.get(cat.id)!;
+      c.totalScore += ss.score;
+      c.skills.push({
+        id: ss.id,
+        skillId: ss.skill.id,
+        name: ss.skill.name,
+        slug: ss.skill.slug,
+        score: ss.score,
+        proficiency: ss.proficiency,
+        isVerified: ss.isVerified,
+        lastAssessedAt: ss.lastAssessedAt,
+      });
+    }
+
+    const categories = Array.from(categoryMap.values()).map((c) => ({
+      categoryId: c.categoryId,
+      categoryName: c.categoryName,
+      categorySlug: c.categorySlug,
+      icon: c.icon,
+      averageScore: Number((c.totalScore / c.skills.length).toFixed(1)),
+      skillCount: c.skills.length,
+      skills: c.skills,
+    }));
+
+    // Soft vs Technical segmentation
+    const softSkillSlugs = new Set([
+      "soft-skills",
+      "aptitude",
+      "communication",
+    ]);
+
+    const softSkills = studentSkills
+      .filter((s) => softSkillSlugs.has(s.skill.category.slug))
+      .map((s) => ({
+        id: s.id,
+        skillId: s.skill.id,
+        name: s.skill.name,
+        category: s.skill.category.name,
+        score: s.score,
+        proficiency: s.proficiency,
+        isVerified: s.isVerified,
+        lastAssessedAt: s.lastAssessedAt,
+      }));
+
+    const technicalSkills = studentSkills
+      .filter((s) => !softSkillSlugs.has(s.skill.category.slug))
+      .map((s) => ({
+        id: s.id,
+        skillId: s.skill.id,
+        name: s.skill.name,
+        category: s.skill.category.name,
+        score: s.score,
+        proficiency: s.proficiency,
+        isVerified: s.isVerified,
+        lastAssessedAt: s.lastAssessedAt,
+      }));
+
+    // Strengths (>= 75%) and Weak Skills (< 60%)
+    const strengths = studentSkills
+      .filter((s) => s.score >= 75)
+      .map((s) => ({
+        id: s.id,
+        skillId: s.skill.id,
+        name: s.skill.name,
+        category: s.skill.category.name,
+        score: s.score,
+        proficiency: s.proficiency,
+        isVerified: s.isVerified,
+      }));
+
+    const weakSkills = studentSkills
+      .filter((s) => s.score < 60)
+      .map((s) => ({
+        id: s.id,
+        skillId: s.skill.id,
+        name: s.skill.name,
+        category: s.skill.category.name,
+        score: s.score,
+        proficiency: s.proficiency,
+        isVerified: s.isVerified,
+      }));
+
+    const recentAssessmentsCount = await prisma.assessmentResponse.count({
+      where: { studentId: student.id },
+    });
+
+    return {
+      overallScore,
+      totalSkills: studentSkills.length,
+      verifiedSkillsCount,
+      categories,
+      technicalSkills,
+      softSkills,
+      strengths,
+      weakSkills,
+      recentAssessmentsCount,
+    };
+  }
+
+  /**
+   * Fetch chronological assessment and skill advancement history
+   */
+  async getStudentSkillHistory(userId: string) {
+    const student = await this.getProfileByUserId(userId);
+
+    const responses = await prisma.assessmentResponse.findMany({
+      where: { studentId: student.id },
+      orderBy: { completedAt: "desc" },
+      include: {
+        assessment: {
+          include: {
+            category: true,
+          },
+        },
+      },
+    });
+
+    return responses.map((r) => {
+      const payload = r.answersJson as any;
+      return {
+        id: r.id,
+        assessmentId: r.assessmentId,
+        title: r.assessment.title,
+        slug: r.assessment.slug,
+        category: r.assessment.category.name,
+        score: r.score,
+        totalQuestions: r.totalQuestions,
+        correctAnswers: r.correctAnswers,
+        percentage: r.percentage,
+        passed: r.passed,
+        completedAt: r.completedAt,
+        skillBreakdown: payload?.skillBreakdown || [],
+      };
+    });
+  }
+
+  /**
    * Fetch public view of student profile by student ID
    */
   async getProfileById(studentId: string) {

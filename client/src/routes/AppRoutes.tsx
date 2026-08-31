@@ -17,6 +17,7 @@ import { AdminLayout } from "../layouts/AdminLayout";
 
 import { StudentDashboardPage } from "../pages/dashboards/StudentDashboardPage";
 import { StudentProfilePage } from "../pages/student/StudentProfilePage";
+import { StudentSkillsPage } from "../pages/student/StudentSkillsPage";
 import { AssessmentCatalogPage } from "../pages/student/AssessmentCatalogPage";
 import { AssessmentSessionPage } from "../pages/student/AssessmentSessionPage";
 import { AssessmentResultPage } from "../pages/student/AssessmentResultPage";
@@ -78,15 +79,7 @@ export const AppRoutes: React.FC = () => {
           path="assessment/:id/result"
           element={<AssessmentResultPage />}
         />
-        <Route
-          path="skills"
-          element={
-            <FeaturePlaceholder
-              title="Skill Profile & Gap Analysis"
-              subtitle="Granular 0-100 skill scores, radar comparisons, and specific target proficiency gaps."
-            />
-          }
-        />
+        <Route path="skills" element={<StudentSkillsPage />} />
         <Route
           path="careers"
           element={

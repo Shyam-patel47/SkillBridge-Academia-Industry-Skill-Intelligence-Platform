@@ -16,6 +16,22 @@ router.get(
   (req, res, next) => studentController.getMe(req, res, next),
 );
 
+// Current Student Skills Breakdown & Verified Evidence
+router.get(
+  "/me/skills",
+  authenticate,
+  authorizeRoles(UserRole.STUDENT, UserRole.SUPER_ADMIN),
+  (req, res, next) => studentController.getMySkills(req, res, next),
+);
+
+// Current Student Skill Advancement & Assessment History
+router.get(
+  "/me/skill-history",
+  authenticate,
+  authorizeRoles(UserRole.STUDENT, UserRole.SUPER_ADMIN),
+  (req, res, next) => studentController.getMySkillHistory(req, res, next),
+);
+
 // Current Student Profile (Update)
 router.put(
   "/me",

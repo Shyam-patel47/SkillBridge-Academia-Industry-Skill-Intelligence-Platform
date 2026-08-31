@@ -40,6 +40,45 @@ export class StudentController {
     }
   }
 
+  async getMySkills(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const userId = req.user!.id;
+      const skillsSummary =
+        await studentService.getStudentSkillsSummary(userId);
+      sendSuccess(
+        res,
+        skillsSummary,
+        "Student skills summary retrieved successfully",
+        200,
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getMySkillHistory(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const userId = req.user!.id;
+      const history = await studentService.getStudentSkillHistory(userId);
+      sendSuccess(
+        res,
+        { history },
+        "Student skill assessment history retrieved successfully",
+        200,
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async getById(
     req: Request,
     res: Response,
