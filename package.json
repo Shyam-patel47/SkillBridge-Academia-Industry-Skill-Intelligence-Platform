@@ -1,0 +1,43 @@
+{
+  "name": "skillbridge",
+  "version": "1.0.0",
+  "description": "SkillBridge — Academia-Industry Skill Intelligence & Opportunity Matching Platform",
+  "private": true,
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "dev": "concurrently -n \"SERVER,CLIENT\" -c \"cyan,magenta\" \"npm run dev --workspace=server\" \"npm run dev --workspace=client\"",
+    "dev:server": "npm run dev --workspace=server",
+    "dev:client": "npm run dev --workspace=client",
+    "build": "npm run build --workspace=server && npm run build --workspace=client",
+    "build:server": "npm run build --workspace=server",
+    "build:client": "npm run build --workspace=client",
+    "start": "npm run start --workspace=server",
+    "lint": "npm run lint --workspace=server && npm run lint --workspace=client",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,css}\"",
+    "prisma:generate": "npm run prisma:generate --workspace=server",
+    "prisma:push": "npm run prisma:push --workspace=server",
+    "prisma:migrate": "npm run prisma:migrate --workspace=server",
+    "prisma:seed": "npm run prisma:seed --workspace=server",
+    "prisma:studio": "npm run prisma:studio --workspace=server"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "prettier": "^3.5.2"
+  },
+  "keywords": [
+    "skill-mapping",
+    "career-intelligence",
+    "internships",
+    "placement",
+    "react",
+    "express",
+    "typescript",
+    "postgresql",
+    "prisma"
+  ],
+  "author": "SkillBridge Team",
+  "license": "MIT"
+}

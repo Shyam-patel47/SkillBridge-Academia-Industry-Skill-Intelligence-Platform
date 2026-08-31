@@ -1,0 +1,595 @@
+// ==========================================
+// SkillBridge Prisma Database Schema
+// Database: PostgreSQL / NeonDB
+// ==========================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// Enums
+// ==========================================
+
+enum UserRole {
+  STUDENT
+  INDUSTRY
+  INSTITUTION_ADMIN
+  SUPER_ADMIN
+}
+
+enum ProficiencyLevel {
+  BEGINNER      // 0 - 39
+  INTERMEDIATE  // 40 - 69
+  ADVANCED      // 70 - 100
+}
+
+enum DifficultyLevel {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum DemandLevel {
+  LOW
+  MODERATE
+  HIGH
+  VERY_HIGH
+}
+
+enum OpportunityType {
+  INTERNSHIP
+  FULL_TIME
+  PART_TIME
+}
+
+enum WorkMode {
+  REMOTE
+  HYBRID
+  ON_SITE
+  ANY
+}
+
+enum ApplicationStatus {
+  APPLIED
+  SHORTLISTED
+  INTERVIEW
+  OFFER
+  REJECTED
+  JOINED
+}
+
+enum LearningType {
+  COURSE
+  DOCUMENTATION
+  PROJECT_TUTORIAL
+  CERTIFICATION_PREP
+}
+
+enum NotificationType {
+  SYSTEM
+  APPLICATION_UPDATE
+  ASSESSMENT_COMPLETED
+  MATCH_ALERT
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  SUBMIT_ASSESSMENT
+  APPLY_OPPORTUNITY
+}
+
+// ==========================================
+// 1. Identity & Profiles
+// ==========================================
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  role         UserRole  @default(STUDENT)
+  isVerified   Boolean   @default(false)
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  // Relationships
+  student      Student?
+  company      Company?
+  institution  Institution?
+  refreshTokens RefreshToken[]
+  notifications Notification[]
+  auditLogs     AuditLog[]
+
+  @@index([email])
+  @@index([role])
+}
+
+model RefreshToken {
+  id              String    @id @default(cuid())
+  userId          String
+  tokenHash       String    @unique
+  expiresAt       DateTime
+  isRevoked       Boolean   @default(false)
+  replacedByToken String?
+  createdAt       DateTime  @default(now())
+
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tokenHash])
+}
+
+model Student {
+  id                 String              @id @default(cuid())
+  userId             String              @unique
+  fullName           String
+  headline           String?
+  phone              String?
+  location           String?
+  college            String?
+  branch             String?
+  gradYear           Int?
+  cgpa               Float?
+  bio                String?             @db.Text
+  resumeUrl          String?
+  careerInterests    String[]
+  preferredLocations String[]
+  workModePref       WorkMode            @default(ANY)
+  institutionId      String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  // Relations
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  institution        Institution?        @relation(fields: [institutionId], references: [id], onDelete: SetNull)
+  skills             StudentSkill[]
+  assessmentResponses AssessmentResponse[]
+  applications       Application[]
+  projects           Project[]
+  certifications     Certification[]
+  portfolio          Portfolio?
+
+  @@index([userId])
+  @@index([institutionId])
+  @@index([college])
+  @@index([branch])
+}
+
+model Company {
+  id          String        @id @default(cuid())
+  userId      String        @unique
+  companyName String
+  industry    String?
+  website     String?
+  logoUrl     String?
+  location    String?
+  description String?       @db.Text
+  isVerified  Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  // Relations
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  opportunities Opportunity[]
+
+  @@index([userId])
+  @@index([companyName])
+}
+
+model Institution {
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  institutionName String
+  code            String    @unique
+  location        String?
+  website         String?
+  isVerified      Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  students        Student[]
+
+  @@index([userId])
+  @@index([code])
+}
+
+// ==========================================
+// 2. Skill Taxonomy & Competency Engine
+// ==========================================
+
+model SkillCategory {
+  id          String        @id @default(cuid())
+  name        String        @unique
+  slug        String        @unique
+  description String?       @db.Text
+  icon        String?
+  order       Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  // Relations
+  skills      Skill[]
+  assessments Assessment[]
+
+  @@index([slug])
+}
+
+model Skill {
+  id                  String               @id @default(cuid())
+  name                String               @unique
+  slug                String               @unique
+  categoryId          String
+  description         String?              @db.Text
+  icon                String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+
+  // Relations
+  category            SkillCategory        @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  studentSkills       StudentSkill[]
+  assessmentQuestions AssessmentQuestion[]
+  careerRoleSkills    CareerRoleSkill[]
+  opportunitySkills   OpportunitySkill[]
+  learningPrograms    LearningProgramSkill[]
+  certifications      Certification[]
+
+  @@index([categoryId])
+  @@index([slug])
+}
+
+model StudentSkill {
+  id             String           @id @default(cuid())
+  studentId      String
+  skillId        String
+  score          Float            @default(0) // 0 to 100
+  proficiency    ProficiencyLevel @default(BEGINNER)
+  isVerified     Boolean          @default(false)
+  lastAssessedAt DateTime?        @default(now())
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  // Relations
+  student        Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  skill          Skill            @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, skillId])
+  @@index([studentId])
+  @@index([skillId])
+}
+
+// ==========================================
+// 3. Assessment Engine
+// ==========================================
+
+model Assessment {
+  id              String               @id @default(cuid())
+  title           String
+  slug            String               @unique
+  description     String?              @db.Text
+  categoryId      String
+  durationMinutes Int                  @default(20)
+  passingScore    Float                @default(60.0)
+  isActive        Boolean              @default(true)
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  // Relations
+  category        SkillCategory        @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  questions       AssessmentQuestion[]
+  responses       AssessmentResponse[]
+
+  @@index([categoryId])
+  @@index([slug])
+}
+
+model AssessmentQuestion {
+  id                 String          @id @default(cuid())
+  assessmentId       String
+  skillId            String
+  questionText       String          @db.Text
+  codeSnippet        String?         @db.Text
+  options            Json            // Array of options: ["Option A", "Option B", ...]
+  correctOptionIndex Int
+  explanation        String?         @db.Text
+  difficulty         DifficultyLevel @default(MEDIUM)
+  weight             Float           @default(1.0)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  // Relations
+  assessment         Assessment      @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  skill              Skill           @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@index([assessmentId])
+  @@index([skillId])
+}
+
+model AssessmentResponse {
+  id             String     @id @default(cuid())
+  studentId      String
+  assessmentId   String
+  score          Float
+  totalQuestions Int
+  correctAnswers Int
+  percentage     Float
+  passed         Boolean
+  answersJson    Json       // Recorded choices
+  completedAt    DateTime   @default(now())
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  // Relations
+  student        Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  assessment     Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+  @@index([assessmentId])
+}
+
+// ==========================================
+// 4. Career Benchmarks & Gap Engine
+// ==========================================
+
+model CareerRole {
+  id             String            @id @default(cuid())
+  title          String            @unique
+  slug           String            @unique
+  description    String?           @db.Text
+  category       String?
+  avgSalary      String?
+  demandLevel    DemandLevel       @default(HIGH)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  // Relations
+  requiredSkills CareerRoleSkill[]
+
+  @@index([slug])
+}
+
+model CareerRoleSkill {
+  id             String     @id @default(cuid())
+  careerRoleId   String
+  skillId        String
+  minProficiency Float      @default(60.0) // 0 to 100 required
+  weight         Float      @default(1.0)
+  isCore         Boolean    @default(true)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  // Relations
+  careerRole     CareerRole @relation(fields: [careerRoleId], references: [id], onDelete: Cascade)
+  skill          Skill      @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([careerRoleId, skillId])
+  @@index([careerRoleId])
+  @@index([skillId])
+}
+
+// ==========================================
+// 5. Industry Opportunities & Applications
+// ==========================================
+
+model Opportunity {
+  id                String             @id @default(cuid())
+  companyId         String
+  title             String
+  slug              String
+  type              OpportunityType    @default(INTERNSHIP)
+  description       String             @db.Text
+  workMode          WorkMode           @default(REMOTE)
+  location          String?
+  minCgpa           Float?             @default(0)
+  eligibleBranches  String[]
+  eligibleGradYears Int[]
+  duration          String?
+  stipendSalary     String?
+  deadline          DateTime?
+  isActive          Boolean            @default(true)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  // Relations
+  company           Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  requiredSkills    OpportunitySkill[]
+  applications      Application[]
+
+  @@index([companyId])
+  @@index([type])
+  @@index([isActive])
+}
+
+model OpportunitySkill {
+  id            String      @id @default(cuid())
+  opportunityId String
+  skillId       String
+  minScore      Float       @default(50.0)
+  isMandatory   Boolean     @default(true)
+  weight        Float       @default(1.0)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  // Relations
+  opportunity   Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  skill         Skill       @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([opportunityId, skillId])
+  @@index([opportunityId])
+  @@index([skillId])
+}
+
+model Application {
+  id             String            @id @default(cuid())
+  opportunityId  String
+  studentId      String
+  status         ApplicationStatus @default(APPLIED)
+  matchScore     Float?            @default(0)
+  matchBreakdown Json?
+  resumeUrl      String?
+  coverLetter    String?           @db.Text
+  statusNotes    String?           @db.Text
+  appliedAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  // Relations
+  opportunity    Opportunity       @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  student        Student           @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([opportunityId, studentId])
+  @@index([opportunityId])
+  @@index([studentId])
+  @@index([status])
+}
+
+// ==========================================
+// 6. Learning Programs
+// ==========================================
+
+model LearningProgram {
+  id             String                 @id @default(cuid())
+  title          String
+  slug           String                 @unique
+  description    String?                @db.Text
+  provider       String
+  url            String
+  type           LearningType           @default(COURSE)
+  difficulty     DifficultyLevel        @default(EASY)
+  estimatedHours Int?                   @default(10)
+  isFree         Boolean                @default(true)
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+
+  // Relations
+  skills         LearningProgramSkill[]
+
+  @@index([slug])
+}
+
+model LearningProgramSkill {
+  id                String           @id @default(cuid())
+  learningProgramId String
+  skillId           String
+  targetLevel       ProficiencyLevel @default(BEGINNER)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  // Relations
+  learningProgram   LearningProgram  @relation(fields: [learningProgramId], references: [id], onDelete: Cascade)
+  skill             Skill            @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([learningProgramId, skillId])
+  @@index([learningProgramId])
+  @@index([skillId])
+}
+
+// ==========================================
+// 7. Student Digital Portfolio
+// ==========================================
+
+model Project {
+  id          String    @id @default(cuid())
+  studentId   String
+  title       String
+  description String    @db.Text
+  liveUrl     String?
+  githubUrl   String?
+  skillsUsed  String[]
+  startDate   DateTime?
+  endDate     DateTime?
+  isFeatured  Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  student     Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+}
+
+model Certification {
+  id            String    @id @default(cuid())
+  studentId     String
+  skillId       String?
+  title         String
+  issuer        String
+  issueDate     DateTime
+  expiryDate    DateTime?
+  credentialUrl String?
+  credentialId  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  student       Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  skill         Skill?    @relation(fields: [skillId], references: [id], onDelete: SetNull)
+
+  @@index([studentId])
+}
+
+model Portfolio {
+  id         String   @id @default(cuid())
+  studentId  String   @unique
+  customSlug String?  @unique
+  isPublic   Boolean  @default(true)
+  aboutMe    String?  @db.Text
+  themeColor String?  @default("#0C8EE9")
+  viewsCount Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([customSlug])
+}
+
+// ==========================================
+// 8. Notifications & Audit Logging
+// ==========================================
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  title     String
+  message   String           @db.Text
+  type      NotificationType @default(SYSTEM)
+  isRead    Boolean          @default(false)
+  link      String?
+  createdAt DateTime         @default(now())
+
+  // Relations
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+}
+
+model AuditLog {
+  id         String      @id @default(cuid())
+  userId     String?
+  action     AuditAction
+  entityType String
+  entityId   String?
+  details    Json?
+  ipAddress  String?
+  userAgent  String?
+  timestamp  DateTime    @default(now())
+
+  // Relations
+  user       User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+  @@index([timestamp])
+}
