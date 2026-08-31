@@ -517,7 +517,7 @@ async function main() {
       provider: "SkillBridge Academy",
       url: "https://skillbridge.dev/learn/react-mastery",
       type: LearningType.COURSE,
-      difficulty: DifficultyLevel.INTERMEDIATE as any,
+      difficulty: DifficultyLevel.MEDIUM,
       estimatedHours: 24,
       isFree: true,
       skills: [
@@ -533,7 +533,7 @@ async function main() {
       provider: "Cloud Native Learning",
       url: "https://skillbridge.dev/learn/docker-fundamentals",
       type: LearningType.PROJECT_TUTORIAL,
-      difficulty: DifficultyLevel.BEGINNER as any,
+      difficulty: DifficultyLevel.EASY,
       estimatedHours: 12,
       isFree: true,
       skills: [{ slug: "docker", targetLevel: ProficiencyLevel.INTERMEDIATE }],
@@ -546,7 +546,7 @@ async function main() {
       provider: "Data Engineering Institute",
       url: "https://skillbridge.dev/learn/postgresql-optimization",
       type: LearningType.DOCUMENTATION,
-      difficulty: DifficultyLevel.ADVANCED as any,
+      difficulty: DifficultyLevel.HARD,
       estimatedHours: 18,
       isFree: true,
       skills: [
