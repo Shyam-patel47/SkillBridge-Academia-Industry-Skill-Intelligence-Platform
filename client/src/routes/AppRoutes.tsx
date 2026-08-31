@@ -20,6 +20,7 @@ import { StudentProfilePage } from "../pages/student/StudentProfilePage";
 import { IndustryDashboardPage } from "../pages/dashboards/IndustryDashboardPage";
 import { InstitutionDashboardPage } from "../pages/dashboards/InstitutionDashboardPage";
 import { AdminDashboardPage } from "../pages/dashboards/AdminDashboardPage";
+import { AdminSkillTaxonomyPage } from "../pages/admin/AdminSkillTaxonomyPage";
 
 // Placeholder view for subroutes
 const FeaturePlaceholder: React.FC<{ title: string; subtitle: string }> = ({
@@ -236,15 +237,7 @@ export const AppRoutes: React.FC = () => {
       >
         <Route index element={<Navigate to="/admin/dashboard" replace />} />
         <Route path="dashboard" element={<AdminDashboardPage />} />
-        <Route
-          path="skills"
-          element={
-            <FeaturePlaceholder
-              title="Skill Taxonomy Management"
-              subtitle="Create and organize categories, skills, and benchmark career roles."
-            />
-          }
-        />
+        <Route path="skills" element={<AdminSkillTaxonomyPage />} />
         <Route
           path="companies"
           element={
