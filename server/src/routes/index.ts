@@ -5,6 +5,7 @@ import { studentRoutes } from "../modules/students/student.routes.js";
 import { skillRoutes } from "../modules/skills/skill.routes.js";
 import { assessmentRoutes } from "../modules/assessments/assessment.routes.js";
 import { careerRoutes } from "../modules/careers/career.routes.js";
+import { learningRoutes } from "../modules/learning/learning.routes.js";
 import { testRoleRoutes } from "./test-role.routes.js";
 
 const router = Router();
@@ -26,6 +27,9 @@ router.use("/assessments", assessmentRoutes);
 
 // Career Intelligence & Skill Gap routes
 router.use("/careers", careerRoutes);
+
+// Learning Recommendations & Programs routes
+router.use("/learning", learningRoutes);
 
 // RBAC Test routes
 router.use("/test-role", testRoleRoutes);

@@ -20,6 +20,7 @@ import { StudentProfilePage } from "../pages/student/StudentProfilePage";
 import { StudentSkillsPage } from "../pages/student/StudentSkillsPage";
 import { CareerPathwaysPage } from "../pages/student/CareerPathwaysPage";
 import { CareerDetailPage } from "../pages/student/CareerDetailPage";
+import { StudentLearningPage } from "../pages/student/StudentLearningPage";
 import { AssessmentCatalogPage } from "../pages/student/AssessmentCatalogPage";
 import { AssessmentSessionPage } from "../pages/student/AssessmentSessionPage";
 import { AssessmentResultPage } from "../pages/student/AssessmentResultPage";
@@ -84,6 +85,8 @@ export const AppRoutes: React.FC = () => {
         <Route path="skills" element={<StudentSkillsPage />} />
         <Route path="careers" element={<CareerPathwaysPage />} />
         <Route path="careers/:id" element={<CareerDetailPage />} />
+        <Route path="learning" element={<StudentLearningPage />} />
+        <Route path="learning/:id" element={<StudentLearningPage />} />
         <Route
           path="opportunities"
           element={
