@@ -17,6 +17,9 @@ import { AdminLayout } from "../layouts/AdminLayout";
 
 import { StudentDashboardPage } from "../pages/dashboards/StudentDashboardPage";
 import { StudentProfilePage } from "../pages/student/StudentProfilePage";
+import { AssessmentCatalogPage } from "../pages/student/AssessmentCatalogPage";
+import { AssessmentSessionPage } from "../pages/student/AssessmentSessionPage";
+import { AssessmentResultPage } from "../pages/student/AssessmentResultPage";
 import { IndustryDashboardPage } from "../pages/dashboards/IndustryDashboardPage";
 import { InstitutionDashboardPage } from "../pages/dashboards/InstitutionDashboardPage";
 import { AdminDashboardPage } from "../pages/dashboards/AdminDashboardPage";
@@ -63,14 +66,17 @@ export const AppRoutes: React.FC = () => {
         <Route index element={<Navigate to="/student/dashboard" replace />} />
         <Route path="dashboard" element={<StudentDashboardPage />} />
         <Route path="profile" element={<StudentProfilePage />} />
+        <Route path="assessments" element={<AssessmentCatalogPage />} />
+        <Route path="assessments/:id" element={<AssessmentSessionPage />} />
         <Route
-          path="assessments"
-          element={
-            <FeaturePlaceholder
-              title="Skill Assessment Engine"
-              subtitle="Timed adaptive quizzes to evaluate technical proficiency and generate verified competency scores."
-            />
-          }
+          path="assessments/:id/result"
+          element={<AssessmentResultPage />}
+        />
+        <Route path="assessment" element={<AssessmentCatalogPage />} />
+        <Route path="assessment/:id" element={<AssessmentSessionPage />} />
+        <Route
+          path="assessment/:id/result"
+          element={<AssessmentResultPage />}
         />
         <Route
           path="skills"
