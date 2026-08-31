@@ -2,6 +2,7 @@ import express, { Express } from "express";
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
+import cookieParser from "cookie-parser";
 import { config } from "./config/index.js";
 import { apiRoutes } from "./routes/index.js";
 import { errorHandler } from "./middleware/error.middleware.js";
@@ -10,16 +11,25 @@ import { notFoundHandler } from "./middleware/notFound.middleware.js";
 export const createApp = (): Express => {
   const app = express();
 
-  // Security Middleware
+  // Security Headers
   app.use(helmet());
+
+  // CORS
   app.use(
     cors({
-      origin: config.clientUrl,
+      origin: [
+        config.clientUrl,
+        "http://localhost:5173",
+        "http://localhost:3000",
+      ],
       credentials: true,
       methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization"],
     }),
   );
+
+  // Cookie parser
+  app.use(cookieParser());
 
   // Request Logging
   if (config.isDevelopment) {
@@ -42,8 +52,11 @@ export const createApp = (): Express => {
     });
   });
 
-  // API Routes
+  // Mount API Routes under both configured prefix (e.g. /api/v1) and /api
   app.use(config.apiPrefix, apiRoutes);
+  if (config.apiPrefix !== "/api") {
+    app.use("/api", apiRoutes);
+  }
 
   // 404 Handler
   app.use(notFoundHandler);
