@@ -8,6 +8,7 @@ import { careerRoutes } from "../modules/careers/career.routes.js";
 import { learningRoutes } from "../modules/learning/learning.routes.js";
 import { companyRoutes } from "../modules/companies/company.routes.js";
 import { opportunityRoutes } from "../modules/opportunities/opportunity.routes.js";
+import { applicationRoutes } from "../modules/applications/application.routes.js";
 import { testRoleRoutes } from "./test-role.routes.js";
 
 const router = Router();
@@ -38,6 +39,9 @@ router.use("/companies", companyRoutes);
 
 // Industry Opportunities routes
 router.use("/opportunities", opportunityRoutes);
+
+// Application Lifecycle routes
+router.use("/applications", applicationRoutes);
 
 // RBAC Test routes
 router.use("/test-role", testRoleRoutes);

@@ -23,6 +23,8 @@ import { CareerDetailPage } from "../pages/student/CareerDetailPage";
 import { StudentLearningPage } from "../pages/student/StudentLearningPage";
 import { StudentOpportunitiesPage } from "../pages/student/StudentOpportunitiesPage";
 import { StudentOpportunityDetailPage } from "../pages/student/StudentOpportunityDetailPage";
+import { StudentApplicationsPage } from "../pages/student/StudentApplicationsPage";
+import { StudentApplicationDetailPage } from "../pages/student/StudentApplicationDetailPage";
 import { AssessmentCatalogPage } from "../pages/student/AssessmentCatalogPage";
 import { AssessmentSessionPage } from "../pages/student/AssessmentSessionPage";
 import { AssessmentResultPage } from "../pages/student/AssessmentResultPage";
@@ -32,6 +34,7 @@ import { IndustryOpportunitiesPage } from "../pages/industry/IndustryOpportuniti
 import { CreateOpportunityPage } from "../pages/industry/CreateOpportunityPage";
 import { EditOpportunityPage } from "../pages/industry/EditOpportunityPage";
 import { OpportunityDetailPage } from "../pages/industry/OpportunityDetailPage";
+import { RecruiterApplicantsPage } from "../pages/industry/RecruiterApplicantsPage";
 import { InstitutionDashboardPage } from "../pages/dashboards/InstitutionDashboardPage";
 import { AdminDashboardPage } from "../pages/dashboards/AdminDashboardPage";
 import { AdminSkillTaxonomyPage } from "../pages/admin/AdminSkillTaxonomyPage";
@@ -98,14 +101,10 @@ export const AppRoutes: React.FC = () => {
           path="opportunities/:id"
           element={<StudentOpportunityDetailPage />}
         />
+        <Route path="applications" element={<StudentApplicationsPage />} />
         <Route
-          path="applications"
-          element={
-            <FeaturePlaceholder
-              title="My Applications"
-              subtitle="Track your submission lifecycle from Applied to Shortlisted, Interview, and Offer."
-            />
-          }
+          path="applications/:id"
+          element={<StudentApplicationDetailPage />}
         />
         <Route
           path="portfolio"
@@ -142,16 +141,12 @@ export const AppRoutes: React.FC = () => {
           path="opportunities/:id/edit"
           element={<EditOpportunityPage />}
         />
-        <Route path="create-opportunity" element={<CreateOpportunityPage />} />
         <Route
-          path="applicants"
-          element={
-            <FeaturePlaceholder
-              title="Applicant Review & Ranking Pipeline"
-              subtitle="Review candidates ranked by deterministic skill compatibility scores."
-            />
-          }
+          path="opportunities/:id/applicants"
+          element={<RecruiterApplicantsPage />}
         />
+        <Route path="create-opportunity" element={<CreateOpportunityPage />} />
+        <Route path="applicants" element={<RecruiterApplicantsPage />} />
       </Route>
 
       {/* Protected Institution Admin Routes */}

@@ -1,6 +1,6 @@
-import React from "react";
-import { useParams, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import React, { useState } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Briefcase,
   ArrowLeft,
@@ -15,24 +15,66 @@ import {
   Layers,
   BookOpen,
   Award,
-  Lock,
   Heart,
   UserCheck,
   Compass,
+  Send,
+  FileText,
+  X,
 } from "lucide-react";
 import {
   opportunityDiscoveryService,
   StudentOpportunityItem,
 } from "../../services/opportunityDiscoveryService";
+import { applicationService } from "../../services/applicationService";
 
 export const StudentOpportunityDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
+  const [resumeUrl, setResumeUrl] = useState("");
+  const [coverLetter, setCoverLetter] = useState("");
+  const [applySuccess, setApplySuccess] = useState<string | null>(null);
+  const [applyError, setApplyError] = useState<string | null>(null);
 
   const { data: opportunity, isLoading } = useQuery<StudentOpportunityItem>({
     queryKey: ["student", "opportunity", id],
     queryFn: () => opportunityDiscoveryService.getStudentOpportunityDetail(id!),
     enabled: Boolean(id),
   });
+
+  const applyMutation = useMutation({
+    mutationFn: (payload: {
+      opportunityId: string;
+      resumeUrl?: string;
+      coverLetter?: string;
+    }) => applicationService.apply(payload),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["student", "applications"] });
+      setApplySuccess(data.id);
+      setApplyError(null);
+    },
+    onError: (err: any) => {
+      setApplyError(
+        err.response?.data?.message ||
+          err.message ||
+          "Failed to submit application",
+      );
+    },
+  });
+
+  const handleApplySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!opportunity) return;
+    setApplyError(null);
+    applyMutation.mutate({
+      opportunityId: opportunity.id,
+      resumeUrl: resumeUrl.trim() || undefined,
+      coverLetter: coverLetter.trim() || undefined,
+    });
+  };
 
   if (isLoading) {
     return (
@@ -556,31 +598,187 @@ export const StudentOpportunityDetailPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Applications Module Placeholder Notice */}
-      <div className="p-6 rounded-3xl border border-indigo-500/30 bg-indigo-500/10 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center space-x-3">
-          <div className="p-3 rounded-2xl bg-indigo-500/20 text-indigo-400 shrink-0">
-            <Lock className="w-5 h-5" />
+      {/* Interactive Application Action Hub */}
+      <div className="p-6 rounded-3xl border border-sky-500/30 bg-gradient-to-r from-sky-950/40 via-slate-900 to-sky-950/40 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-xl shadow-sky-500/10">
+        <div className="space-y-1 text-center sm:text-left">
+          <div className="flex items-center justify-center sm:justify-start space-x-2">
+            <Sparkles className="w-4 h-4 text-sky-400" />
+            <h3 className="text-base font-bold text-white">Ready to Apply?</h3>
           </div>
-          <div>
-            <h3 className="text-sm font-bold text-white">
-              Student Application Pipeline
-            </h3>
-            <p className="text-xs text-slate-400">
-              One-click application submission with resume and verified skill
-              portfolio is scheduled for the upcoming module.
-            </p>
-          </div>
+          <p className="text-xs text-slate-400">
+            Submit your application with verified skill benchmarks and custom
+            cover letter directly to {opportunity.company.companyName}.
+          </p>
         </div>
 
-        <Link
-          to="/student/learning"
-          className="inline-flex items-center space-x-1.5 px-5 py-2.5 rounded-2xl bg-indigo-500 hover:bg-indigo-400 text-white text-xs font-bold shrink-0 transition-all"
-        >
-          <BookOpen className="w-3.5 h-3.5" />
-          <span>Upskill for this Role</span>
-        </Link>
+        <div className="flex items-center space-x-3 shrink-0">
+          <Link
+            to="/student/learning"
+            className="inline-flex items-center space-x-1.5 px-4 py-2.5 rounded-2xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white text-xs font-semibold transition-all"
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>Upskill First</span>
+          </Link>
+
+          <button
+            type="button"
+            onClick={() => setIsApplyModalOpen(true)}
+            className="inline-flex items-center space-x-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-brand-600 to-sky-500 hover:from-brand-500 hover:to-sky-400 text-white text-xs font-extrabold shadow-lg shadow-sky-500/25 transition-all hover:scale-[1.02]"
+          >
+            <Send className="w-4 h-4" />
+            <span>Apply Now ({score}% Match)</span>
+          </button>
+        </div>
       </div>
+
+      {/* Application Submission Modal */}
+      {isApplyModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-850 bg-slate-900 max-w-lg w-full space-y-6 relative shadow-2xl">
+            <button
+              type="button"
+              onClick={() => {
+                setIsApplyModalOpen(false);
+                setApplySuccess(null);
+                setApplyError(null);
+              }}
+              className="absolute right-5 top-5 p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            {applySuccess ? (
+              <div className="text-center py-6 space-y-4">
+                <div className="w-14 h-14 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center mx-auto">
+                  <CheckCircle2 className="w-8 h-8" />
+                </div>
+                <h3 className="text-xl font-extrabold text-white">
+                  Application Submitted!
+                </h3>
+                <p className="text-xs text-slate-400 leading-relaxed max-w-sm mx-auto">
+                  Your application for{" "}
+                  <span className="text-white font-semibold">
+                    {opportunity.title}
+                  </span>{" "}
+                  at{" "}
+                  <span className="text-white font-semibold">
+                    {opportunity.company.companyName}
+                  </span>{" "}
+                  has been securely submitted with your verified skill score of{" "}
+                  <span className="text-emerald-400 font-bold">{score}%</span>.
+                </p>
+
+                <div className="pt-3 flex items-center justify-center space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsApplyModalOpen(false);
+                      navigate(`/student/applications/${applySuccess}`);
+                    }}
+                    className="px-5 py-2.5 rounded-xl bg-sky-500 text-white text-xs font-bold"
+                  >
+                    View Application Status
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsApplyModalOpen(false);
+                      navigate("/student/applications");
+                    }}
+                    className="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold"
+                  >
+                    All Applications
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleApplySubmit} className="space-y-5">
+                <div className="space-y-1">
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-sky-500/10 border border-sky-500/30 text-sky-400 text-[10px] font-mono font-bold">
+                    <Sparkles className="w-3 h-3" />
+                    <span>Match Score: {score}%</span>
+                  </div>
+                  <h3 className="text-xl font-extrabold text-white">
+                    Apply for {opportunity.title}
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    {opportunity.company.companyName} • {opportunity.workMode}
+                  </p>
+                </div>
+
+                {applyError && (
+                  <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span>{applyError}</span>
+                  </div>
+                )}
+
+                {/* Resume URL Input */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-mono text-slate-300 block flex items-center justify-between">
+                    <span>Resume Link (PDF / Portfolio URL)</span>
+                    <span className="text-[10px] text-slate-500">
+                      Optional (uses profile resume)
+                    </span>
+                  </label>
+                  <div className="relative">
+                    <FileText className="w-4 h-4 absolute left-3.5 top-3 text-slate-500" />
+                    <input
+                      type="url"
+                      value={resumeUrl}
+                      onChange={(e) => setResumeUrl(e.target.value)}
+                      placeholder="https://your-domain.com/resume.pdf"
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:outline-none focus:border-sky-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Cover Letter */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-mono text-slate-300 block flex items-center justify-between">
+                    <span>Cover Letter / Note to Recruiter</span>
+                    <span className="text-[10px] text-slate-500">Optional</span>
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={coverLetter}
+                    onChange={(e) => setCoverLetter(e.target.value)}
+                    placeholder="Highlight your key projects, learning milestones, and why you are interested in this position..."
+                    className="w-full p-3 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:outline-none focus:border-sky-500 leading-relaxed"
+                  />
+                </div>
+
+                <div className="pt-2 flex items-center justify-end space-x-3 border-t border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setIsApplyModalOpen(false)}
+                    className="px-4 py-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white text-xs font-semibold"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={applyMutation.isPending}
+                    className="inline-flex items-center space-x-2 px-6 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-xs font-bold transition-all disabled:opacity-50"
+                  >
+                    {applyMutation.isPending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Submitting Application...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-3.5 h-3.5" />
+                        <span>Confirm & Submit</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
