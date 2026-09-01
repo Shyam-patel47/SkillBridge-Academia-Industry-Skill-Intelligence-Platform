@@ -26,6 +26,7 @@ import { StudentOpportunityDetailPage } from "../pages/student/StudentOpportunit
 import { StudentApplicationsPage } from "../pages/student/StudentApplicationsPage";
 import { StudentApplicationDetailPage } from "../pages/student/StudentApplicationDetailPage";
 import { StudentPortfolioStudioPage } from "../pages/student/StudentPortfolioStudioPage";
+import { ResumeSkillExtractionPage } from "../pages/student/ResumeSkillExtractionPage";
 import { PublicPortfolioPage } from "../pages/public/PublicPortfolioPage";
 import { AssessmentCatalogPage } from "../pages/student/AssessmentCatalogPage";
 import { AssessmentSessionPage } from "../pages/student/AssessmentSessionPage";
@@ -112,6 +113,10 @@ export const AppRoutes: React.FC = () => {
           element={<StudentApplicationDetailPage />}
         />
         <Route path="portfolio" element={<StudentPortfolioStudioPage />} />
+        <Route
+          path="resume-extractor"
+          element={<ResumeSkillExtractionPage />}
+        />
       </Route>
 
       {/* Protected Industry / Recruiter Routes */}

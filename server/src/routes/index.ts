@@ -10,6 +10,7 @@ import { companyRoutes } from "../modules/companies/company.routes.js";
 import { opportunityRoutes } from "../modules/opportunities/opportunity.routes.js";
 import { applicationRoutes } from "../modules/applications/application.routes.js";
 import { portfolioRoutes } from "../modules/portfolios/portfolio.routes.js";
+import { resumeRoutes } from "../modules/resumes/resume.routes.js";
 import { institutionRoutes } from "../modules/institutions/institution.routes.js";
 import { testRoleRoutes } from "./test-role.routes.js";
 
@@ -47,6 +48,9 @@ router.use("/applications", applicationRoutes);
 
 // Digital Portfolio routes
 router.use("/portfolios", portfolioRoutes);
+
+// AI Resume Skill Extraction routes
+router.use("/resumes", resumeRoutes);
 
 // Institution Analytics routes
 router.use("/institutions", institutionRoutes);

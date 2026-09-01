@@ -126,7 +126,14 @@ export const StudentSkillsPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center space-x-3 z-10 shrink-0">
+        <div className="flex flex-wrap items-center gap-3 z-10 shrink-0">
+          <Link
+            to="/student/resume-extractor"
+            className="inline-flex items-center space-x-2 px-4 py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-sky-300 text-xs font-bold border border-slate-700 transition-all hover:scale-[1.02]"
+          >
+            <Sparkles className="w-4 h-4 text-sky-400" />
+            <span>AI Resume Extractor</span>
+          </Link>
           <Link
             to="/student/assessments"
             className="inline-flex items-center space-x-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-brand-600 to-sky-500 hover:from-brand-500 hover:to-sky-400 text-white text-xs font-bold shadow-lg shadow-sky-500/25 transition-all hover:scale-[1.02]"
