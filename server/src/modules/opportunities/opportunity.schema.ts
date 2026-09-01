@@ -1,15 +1,12 @@
-import { z } from "zod";
-import { OpportunityType, WorkMode } from "@prisma/client";
+import { z } from 'zod';
+import { OpportunityType, WorkMode } from '@prisma/client';
 
 export const createOpportunitySchema = z.object({
   body: z.object({
-    title: z.string().min(3, "Title must be at least 3 characters").max(150),
+    title: z.string().min(3, 'Title must be at least 3 characters').max(150),
     slug: z.string().max(180).optional(),
     type: z.nativeEnum(OpportunityType).default(OpportunityType.INTERNSHIP),
-    description: z
-      .string()
-      .min(20, "Description must be at least 20 characters")
-      .max(5000),
+    description: z.string().min(20, 'Description must be at least 20 characters').max(5000),
     workMode: z.nativeEnum(WorkMode).default(WorkMode.REMOTE),
     location: z.string().max(150).optional().nullable(),
     minCgpa: z.number().min(0).max(10).default(0),
@@ -18,23 +15,20 @@ export const createOpportunitySchema = z.object({
     duration: z.string().max(50).optional().nullable(),
     stipendSalary: z.string().max(100).optional().nullable(),
     deadline: z
-      .string()
-      .datetime()
+      .union([z.string().datetime(), z.literal(''), z.null()])
       .optional()
-      .nullable()
-      .or(z.literal(""))
       .transform((v) => (v ? new Date(v) : null)),
     isActive: z.boolean().default(true),
     requiredSkills: z
       .array(
         z.object({
-          skillId: z.string().min(1, "Skill ID is required"),
+          skillId: z.string().min(1, 'Skill ID is required'),
           minScore: z.number().min(1).max(100).default(60.0),
           isMandatory: z.boolean().default(true),
           weight: z.number().min(0.1).max(10.0).default(1.0),
-        }),
+        })
       )
-      .min(1, "Opportunity must specify at least one required skill"),
+      .min(1, 'Opportunity must specify at least one required skill'),
   }),
 });
 
@@ -52,13 +46,9 @@ export const updateOpportunitySchema = z.object({
     duration: z.string().max(50).optional().nullable(),
     stipendSalary: z.string().max(100).optional().nullable(),
     deadline: z
-      .string()
-      .datetime()
+      .union([z.string().datetime(), z.literal(''), z.null()])
       .optional()
-      .nullable()
-      .or(z.literal(""))
-      .transform((v) => (v ? new Date(v) : null))
-      .optional(),
+      .transform((v) => (v ? new Date(v) : null)),
     isActive: z.boolean().optional(),
     requiredSkills: z
       .array(
@@ -67,7 +57,7 @@ export const updateOpportunitySchema = z.object({
           minScore: z.number().min(1).max(100).default(60.0),
           isMandatory: z.boolean().default(true),
           weight: z.number().min(0.1).max(10.0).default(1.0),
-        }),
+        })
       )
       .optional(),
   }),
@@ -79,10 +69,9 @@ export const togglePublishSchema = z.object({
   }),
 });
 
-export type CreateOpportunityInput = z.infer<
-  typeof createOpportunitySchema
->["body"];
-export type UpdateOpportunityInput = {
+export type CreateOpportunityInput = z.infer<typeof createOpportunitySchema>['body'];
+
+export interface UpdateOpportunityInput {
   title?: string;
   slug?: string;
   type?: OpportunityType;
@@ -102,4 +91,4 @@ export type UpdateOpportunityInput = {
     isMandatory: boolean;
     weight: number;
   }>;
-};
+}
