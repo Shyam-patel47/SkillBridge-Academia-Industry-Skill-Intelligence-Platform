@@ -25,6 +25,8 @@ import { StudentOpportunitiesPage } from "../pages/student/StudentOpportunitiesP
 import { StudentOpportunityDetailPage } from "../pages/student/StudentOpportunityDetailPage";
 import { StudentApplicationsPage } from "../pages/student/StudentApplicationsPage";
 import { StudentApplicationDetailPage } from "../pages/student/StudentApplicationDetailPage";
+import { StudentPortfolioStudioPage } from "../pages/student/StudentPortfolioStudioPage";
+import { PublicPortfolioPage } from "../pages/public/PublicPortfolioPage";
 import { AssessmentCatalogPage } from "../pages/student/AssessmentCatalogPage";
 import { AssessmentSessionPage } from "../pages/student/AssessmentSessionPage";
 import { AssessmentResultPage } from "../pages/student/AssessmentResultPage";
@@ -66,6 +68,9 @@ export const AppRoutes: React.FC = () => {
         <Route path="/unauthorized" element={<UnauthorizedPage />} />
       </Route>
 
+      {/* Public Shareable Digital Portfolio */}
+      <Route path="/portfolio/:username" element={<PublicPortfolioPage />} />
+
       {/* Protected Student Routes */}
       <Route
         path="/student"
@@ -106,15 +111,7 @@ export const AppRoutes: React.FC = () => {
           path="applications/:id"
           element={<StudentApplicationDetailPage />}
         />
-        <Route
-          path="portfolio"
-          element={
-            <FeaturePlaceholder
-              title="Digital Portfolio & Shareable Profile"
-              subtitle="Verified competencies, live projects, certifications, and public vanity URL."
-            />
-          }
-        />
+        <Route path="portfolio" element={<StudentPortfolioStudioPage />} />
       </Route>
 
       {/* Protected Industry / Recruiter Routes */}

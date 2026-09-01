@@ -9,6 +9,7 @@ import { learningRoutes } from "../modules/learning/learning.routes.js";
 import { companyRoutes } from "../modules/companies/company.routes.js";
 import { opportunityRoutes } from "../modules/opportunities/opportunity.routes.js";
 import { applicationRoutes } from "../modules/applications/application.routes.js";
+import { portfolioRoutes } from "../modules/portfolios/portfolio.routes.js";
 import { testRoleRoutes } from "./test-role.routes.js";
 
 const router = Router();
@@ -42,6 +43,9 @@ router.use("/opportunities", opportunityRoutes);
 
 // Application Lifecycle routes
 router.use("/applications", applicationRoutes);
+
+// Digital Portfolio routes
+router.use("/portfolios", portfolioRoutes);
 
 // RBAC Test routes
 router.use("/test-role", testRoleRoutes);
