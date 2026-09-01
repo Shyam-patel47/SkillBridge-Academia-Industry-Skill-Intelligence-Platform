@@ -12,6 +12,15 @@ import {
   CreateOpportunityInput,
   UpdateOpportunityInput,
 } from "./opportunity.schema.js";
+import {
+  OpportunityMatchingEngine,
+  OpportunityMatchResult,
+  MatchFactorBreakdown,
+  MatchingSkillDetail,
+  MissingSkillDetail,
+  StudentMatchProfile,
+  OpportunityMatchInput,
+} from "./opportunity-matching.engine.js";
 
 function slugify(text: string): string {
   return text
@@ -51,6 +60,7 @@ export interface StudentOpportunityMatchItem {
     isVerified: boolean;
   };
   compatibilityScore: number; // 0 - 100
+  matchScore: number; // 0 - 100
   matchFit: "HIGH_FIT" | "MODERATE_FIT" | "DEVELOPING";
   explanation: string;
   academicEligibility: {
@@ -65,24 +75,14 @@ export interface StudentOpportunityMatchItem {
       studentGradYear: number | null;
     };
   };
-  matchingSkills: Array<{
-    skillId: string;
-    skillName: string;
-    categoryName?: string;
-    studentScore: number;
-    benchmarkScore: number;
-    isMandatory: boolean;
-    isSatisfied: boolean;
-  }>;
-  gapSkills: Array<{
-    skillId: string;
-    skillName: string;
-    categoryName?: string;
-    studentScore: number;
-    benchmarkScore: number;
-    gapPoints: number;
-    isMandatory: boolean;
-  }>;
+  eligibilityResult: OpportunityMatchResult["eligibilityResult"];
+  interestMatch: OpportunityMatchResult["interestMatch"];
+  experienceMatch: OpportunityMatchResult["experienceMatch"];
+  locationMatch: OpportunityMatchResult["locationMatch"];
+  breakdown: MatchFactorBreakdown;
+  matchingSkills: MatchingSkillDetail[];
+  gapSkills: MissingSkillDetail[];
+  missingSkills: MissingSkillDetail[];
   requiredSkills: Array<{
     id: string;
     skillId: string;
@@ -158,7 +158,7 @@ export class OpportunityService {
       description: o.description,
       workMode: o.workMode,
       location: o.location,
-      minCgpa: o.minCgpa,
+      minCgpa: o.minCgpa ?? 0,
       eligibleBranches: o.eligibleBranches,
       eligibleGradYears: o.eligibleGradYears,
       duration: o.duration,
@@ -186,8 +186,8 @@ export class OpportunityService {
    */
   async getOpportunityById(
     idOrSlug: string,
-    userId?: string,
-    userRole?: string,
+    _userId?: string,
+    _userRole?: string,
   ) {
     const opportunity = await prisma.opportunity.findFirst({
       where: {
@@ -240,7 +240,7 @@ export class OpportunityService {
       description: opportunity.description,
       workMode: opportunity.workMode,
       location: opportunity.location,
-      minCgpa: opportunity.minCgpa,
+      minCgpa: opportunity.minCgpa ?? 0,
       eligibleBranches: opportunity.eligibleBranches,
       eligibleGradYears: opportunity.eligibleGradYears,
       duration: opportunity.duration,
@@ -265,7 +265,7 @@ export class OpportunityService {
   }
 
   /**
-   * Student Opportunity Feed with Deterministic Compatibility Scoring & Eligibility
+   * Student Opportunity Discovery Feed with 5-Factor Matching & Compatibility Scoring
    */
   async getStudentOpportunityFeed(
     userId: string,
@@ -284,21 +284,45 @@ export class OpportunityService {
   }> {
     const student = await studentService.getProfileByUserId(userId);
 
-    // 1. Fetch Student's competency records
+    // 1. Fetch Student's competency records, projects, certifications, and assessment attempts
     const studentSkills = await prisma.studentSkill.findMany({
       where: { studentId: student.id },
       include: {
-        skill: { select: { id: true, name: true, slug: true } },
+        skill: {
+          include: {
+            category: { select: { name: true } },
+          },
+        },
       },
     });
 
-    const studentScoreMap = new Map<string, number>();
-    for (const ss of studentSkills) {
-      studentScoreMap.set(ss.skillId, ss.score);
-      studentScoreMap.set(ss.skill.name.toLowerCase().trim(), ss.score);
-    }
+    const [projectCount, certCount, assessmentCount] = await Promise.all([
+      prisma.project.count({ where: { studentId: student.id } }),
+      prisma.certification.count({ where: { studentId: student.id } }),
+      prisma.assessmentResponse.count({ where: { studentId: student.id } }),
+    ]);
 
-    // 2. Build where filter for active opportunities
+    const studentMatchProfile: StudentMatchProfile = {
+      id: student.id,
+      fullName: student.fullName,
+      cgpa: student.cgpa,
+      branch: student.branch,
+      gradYear: student.gradYear,
+      careerInterests: student.careerInterests || [],
+      preferredLocations: student.preferredLocations || [],
+      workModePref: student.workModePref,
+      skills: studentSkills.map((ss) => ({
+        skillId: ss.skillId,
+        skillName: ss.skill.name,
+        score: ss.score,
+        categoryName: ss.skill.category?.name,
+      })),
+      projectCount,
+      certificationCount: certCount,
+      assessmentCount,
+    };
+
+    // 2. Query active opportunities
     const where: any = {
       isActive: true,
     };
@@ -361,113 +385,49 @@ export class OpportunityService {
       orderBy: { createdAt: "desc" },
     });
 
-    // 3. Compute Deterministic Compatibility Score & Eligibility for each opportunity
+    // 3. Compute 5-Factor Opportunity Matching Engine Results
     const matchedOpportunities: StudentOpportunityMatchItem[] = [];
 
     for (const opp of opportunities) {
-      let weightedFulfillmentSum = 0;
-      let totalWeights = 0;
-      const matchingSkills: any[] = [];
-      const gapSkills: any[] = [];
+      const oppMatchInput: OpportunityMatchInput = {
+        id: opp.id,
+        title: opp.title,
+        slug: opp.slug,
+        type: opp.type,
+        description: opp.description,
+        workMode: opp.workMode,
+        location: opp.location,
+        minCgpa: opp.minCgpa ?? 0,
+        eligibleBranches: opp.eligibleBranches,
+        eligibleGradYears: opp.eligibleGradYears,
+        duration: opp.duration,
+        stipendSalary: opp.stipendSalary,
+        deadline: opp.deadline,
+        isActive: opp.isActive,
+        createdAt: opp.createdAt,
+        company: opp.company,
+        requiredSkills: opp.requiredSkills.map((rs) => ({
+          skillId: rs.skillId,
+          skillName: rs.skill.name,
+          skillSlug: rs.skill.slug,
+          categoryName: rs.skill.category?.name,
+          minScore: rs.minScore,
+          isMandatory: rs.isMandatory,
+          weight: rs.weight,
+        })),
+      };
 
-      for (const rs of opp.requiredSkills) {
-        const studentScore =
-          studentScoreMap.get(rs.skillId) ||
-          studentScoreMap.get(rs.skill.name.toLowerCase().trim()) ||
-          0;
-        const benchmarkScore = rs.minScore;
-
-        const fulfillmentRatio = Math.min(1.0, studentScore / benchmarkScore);
-        const weightMultiplier = rs.weight * (rs.isMandatory ? 1.5 : 1.0);
-
-        weightedFulfillmentSum += fulfillmentRatio * weightMultiplier;
-        totalWeights += weightMultiplier;
-
-        if (studentScore >= benchmarkScore) {
-          matchingSkills.push({
-            skillId: rs.skillId,
-            skillName: rs.skill.name,
-            categoryName: rs.skill.category?.name,
-            studentScore,
-            benchmarkScore,
-            isMandatory: rs.isMandatory,
-            isSatisfied: true,
-          });
-        } else {
-          const gapPoints = Math.max(
-            0,
-            Number((benchmarkScore - studentScore).toFixed(1)),
-          );
-          gapSkills.push({
-            skillId: rs.skillId,
-            skillName: rs.skill.name,
-            categoryName: rs.skill.category?.name,
-            studentScore,
-            benchmarkScore,
-            gapPoints,
-            isMandatory: rs.isMandatory,
-          });
-        }
-      }
-
-      const compatibilityScore =
-        totalWeights > 0
-          ? Math.round((weightedFulfillmentSum / totalWeights) * 100)
-          : 0;
-
-      const matchFit: "HIGH_FIT" | "MODERATE_FIT" | "DEVELOPING" =
-        compatibilityScore >= 80
-          ? "HIGH_FIT"
-          : compatibilityScore >= 50
-            ? "MODERATE_FIT"
-            : "DEVELOPING";
-
-      // Academic Eligibility checks
-      const requiredCgpa = opp.minCgpa ?? 0;
-      const cgpaMet =
-        requiredCgpa === 0 ||
-        (student.cgpa !== null && student.cgpa >= requiredCgpa);
-      const branchMet =
-        opp.eligibleBranches.length === 0 ||
-        (student.branch !== null &&
-          opp.eligibleBranches.some(
-            (b) =>
-              b.toLowerCase().includes(student.branch!.toLowerCase()) ||
-              student.branch!.toLowerCase().includes(b.toLowerCase()),
-          ));
-      const gradYearMet =
-        opp.eligibleGradYears.length === 0 ||
-        (student.gradYear !== null &&
-          opp.eligibleGradYears.includes(student.gradYear));
-
-      const isEligible = Boolean(cgpaMet && branchMet && gradYearMet);
+      const matchResult = OpportunityMatchingEngine.calculateMatch(
+        studentMatchProfile,
+        oppMatchInput,
+      );
 
       // Filter if eligibilityOnly is requested
-      if (filters?.eligibilityOnly && !isEligible) {
+      if (
+        filters?.eligibilityOnly &&
+        !matchResult.eligibilityResult.isEligible
+      ) {
         continue;
-      }
-
-      // Generate explainable rationale
-      let explanation = "";
-      if (compatibilityScore >= 80) {
-        explanation = `Strong alignment! You meet or exceed industry proficiency benchmarks across ${matchingSkills.length} of ${opp.requiredSkills.length} required competencies.`;
-      } else if (compatibilityScore >= 50) {
-        const topGaps = gapSkills
-          .map((g) => g.skillName)
-          .slice(0, 2)
-          .join(", ");
-        explanation = `Moderate match. You satisfy core requirements in ${matchingSkills
-          .map((m) => m.skillName)
-          .slice(0, 2)
-          .join(
-            ", ",
-          )}, but need upskilling in ${topGaps} to reach target placement readiness.`;
-      } else {
-        const topMissing = gapSkills
-          .map((g) => g.skillName)
-          .slice(0, 3)
-          .join(", ");
-        explanation = `Skill gap detected. Priority upskilling in ${topMissing} is recommended before applying to maximize placement eligibility.`;
       }
 
       matchedOpportunities.push({
@@ -478,7 +438,7 @@ export class OpportunityService {
         description: opp.description,
         workMode: opp.workMode,
         location: opp.location,
-        minCgpa: requiredCgpa,
+        minCgpa: opp.minCgpa ?? 0,
         eligibleBranches: opp.eligibleBranches,
         eligibleGradYears: opp.eligibleGradYears,
         duration: opp.duration,
@@ -488,23 +448,25 @@ export class OpportunityService {
         createdAt: opp.createdAt,
         updatedAt: opp.updatedAt,
         company: opp.company,
-        compatibilityScore,
-        matchFit,
-        explanation,
+        compatibilityScore: matchResult.matchScore,
+        matchScore: matchResult.matchScore,
+        matchFit: matchResult.matchFit,
+        explanation: matchResult.explanation,
         academicEligibility: {
-          isEligible,
-          cgpaMet: Boolean(cgpaMet),
-          branchMet: Boolean(branchMet),
-          gradYearMet: Boolean(gradYearMet),
-          details: {
-            studentCgpa: student.cgpa,
-            requiredCgpa,
-            studentBranch: student.branch,
-            studentGradYear: student.gradYear,
-          },
+          isEligible: matchResult.eligibilityResult.isEligible,
+          cgpaMet: matchResult.eligibilityResult.cgpaMet,
+          branchMet: matchResult.eligibilityResult.branchMet,
+          gradYearMet: matchResult.eligibilityResult.gradYearMet,
+          details: matchResult.eligibilityResult.details,
         },
-        matchingSkills,
-        gapSkills,
+        eligibilityResult: matchResult.eligibilityResult,
+        interestMatch: matchResult.interestMatch,
+        experienceMatch: matchResult.experienceMatch,
+        locationMatch: matchResult.locationMatch,
+        breakdown: matchResult.breakdown,
+        matchingSkills: matchResult.matchingSkills,
+        gapSkills: matchResult.missingSkills,
+        missingSkills: matchResult.missingSkills,
         requiredSkills: opp.requiredSkills.map((rs) => ({
           id: rs.id,
           skillId: rs.skillId,
@@ -531,10 +493,10 @@ export class OpportunityService {
         return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
       });
     } else {
-      // Default: Sort by compatibility score descending, then eligible first
+      // Default: Sort by match score descending, then eligible first
       matchedOpportunities.sort((a, b) => {
-        if (b.compatibilityScore !== a.compatibilityScore) {
-          return b.compatibilityScore - a.compatibilityScore;
+        if (b.matchScore !== a.matchScore) {
+          return b.matchScore - a.matchScore;
         }
         return (
           (b.academicEligibility.isEligible ? 1 : 0) -
@@ -550,7 +512,7 @@ export class OpportunityService {
   }
 
   /**
-   * Student Opportunity Detail with Compatibility Breakdown
+   * Student Opportunity Detail with Full Multi-Factor Match Breakdown
    */
   async getStudentOpportunityDetail(
     idOrSlug: string,

@@ -43,7 +43,7 @@ export const StudentOpportunitiesPage: React.FC = () => {
     return taxonomy.flatMap((c) => c.skills);
   }, [taxonomy]);
 
-  // Fetch Opportunities Feed with Compatibility Scores
+  // Fetch Opportunities Feed with 5-Factor Compatibility Scores
   const { data, isLoading } = useQuery<{
     opportunities: StudentOpportunityItem[];
     totalCount: number;
@@ -74,7 +74,9 @@ export const StudentOpportunitiesPage: React.FC = () => {
   // Filter based on active tab
   const filteredOpportunities = React.useMemo(() => {
     if (activeTab === "HIGH_MATCH") {
-      return rawOpportunities.filter((o) => o.compatibilityScore >= 80);
+      return rawOpportunities.filter(
+        (o) => (o.matchScore ?? o.compatibilityScore) >= 80,
+      );
     }
     if (activeTab === "INTERNSHIP") {
       return rawOpportunities.filter((o) => o.type === "INTERNSHIP");
@@ -92,15 +94,19 @@ export const StudentOpportunitiesPage: React.FC = () => {
         <div className="space-y-2 z-10">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-300 text-xs font-semibold">
             <Sparkles className="w-3.5 h-3.5 text-sky-400" />
-            <span>AI & Formula Matched Discovery</span>
+            <span>5-Factor Explainable Skill Matching Engine</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
             Internship & Opportunity Explorer
           </h1>
           <p className="text-sm text-slate-400 max-w-2xl leading-relaxed">
-            Discover industry opportunities scored against your verified
-            competency profile. Every match score is mathematically explainable
-            based on employer-defined benchmark criteria.
+            Discover roles scored with 100% explainable mathematical rigor
+            across{" "}
+            <span className="text-white font-semibold">Skills (50%)</span>,{" "}
+            <span className="text-white font-semibold">Eligibility (20%)</span>,{" "}
+            <span className="text-white font-semibold">Interests (15%)</span>,{" "}
+            <span className="text-white font-semibold">Experience (10%)</span>,
+            and <span className="text-white font-semibold">Location (5%)</span>.
           </p>
         </div>
 
@@ -190,8 +196,9 @@ export const StudentOpportunitiesPage: React.FC = () => {
               <span>
                 High Match (≥ 80%) (
                 {
-                  rawOpportunities.filter((o) => o.compatibilityScore >= 80)
-                    .length
+                  rawOpportunities.filter(
+                    (o) => (o.matchScore ?? o.compatibilityScore) >= 80,
+                  ).length
                 }
                 )
               </span>
@@ -257,16 +264,17 @@ export const StudentOpportunitiesPage: React.FC = () => {
         <div className="text-center py-16">
           <Loader2 className="w-8 h-8 animate-spin mx-auto text-sky-400 mb-2" />
           <p className="text-xs font-mono text-slate-400">
-            Calculating personalized compatibility matches from your verified
-            skill profile...
+            Running 5-factor mathematical match calculation against active
+            opportunities...
           </p>
         </div>
       ) : filteredOpportunities.length > 0 ? (
         <div className="space-y-6">
           {filteredOpportunities.map((opp) => {
-            const score = opp.compatibilityScore;
+            const score = opp.matchScore ?? opp.compatibilityScore;
             const isHigh = score >= 80;
             const isModerate = score >= 50 && score < 80;
+            const breakdown = opp.breakdown;
 
             return (
               <div
@@ -346,27 +354,86 @@ export const StudentOpportunitiesPage: React.FC = () => {
                     {opp.minCgpa > 0 && <span>Min CGPA: {opp.minCgpa}</span>}
                   </div>
 
+                  {/* 5-Factor Contribution Preview Strip */}
+                  {breakdown && (
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 p-2.5 rounded-2xl bg-slate-950/80 border border-slate-850 text-[10px] font-mono">
+                      <div>
+                        <span className="text-slate-500 block">
+                          Skills (50%)
+                        </span>
+                        <span className="text-sky-400 font-bold">
+                          {breakdown.skillCompatibility.score}% (+
+                          {breakdown.skillCompatibility.weightedContribution}
+                          pts)
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block">
+                          Eligibility (20%)
+                        </span>
+                        <span
+                          className={
+                            breakdown.eligibility.score >= 70
+                              ? "text-emerald-400 font-bold"
+                              : "text-amber-400 font-bold"
+                          }
+                        >
+                          {breakdown.eligibility.score}% (+
+                          {breakdown.eligibility.weightedContribution}pts)
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block">
+                          Interest (15%)
+                        </span>
+                        <span className="text-indigo-400 font-bold">
+                          {breakdown.careerInterest.score}% (+
+                          {breakdown.careerInterest.weightedContribution}pts)
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block">
+                          Experience (10%)
+                        </span>
+                        <span className="text-purple-400 font-bold">
+                          {breakdown.experience.score}% (+
+                          {breakdown.experience.weightedContribution}pts)
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block">
+                          Location (5%)
+                        </span>
+                        <span className="text-teal-400 font-bold">
+                          {breakdown.locationPreference.score}% (+
+                          {breakdown.locationPreference.weightedContribution}
+                          pts)
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Matching vs Gap Skills Badges */}
                   <div className="space-y-2 pt-1">
                     <div className="flex flex-wrap items-center gap-1.5 text-xs font-mono">
                       <span className="text-slate-500 text-[11px] mr-1">
-                        Skill Benchmarks:
+                        Competencies:
                       </span>
                       {opp.matchingSkills.map((s) => (
                         <span
                           key={s.skillId}
                           className="px-2.5 py-0.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-[11px] font-medium"
                         >
-                          {s.skillName} (✓ {s.studentScore}%)
+                          ✓ {s.skillName} ({s.studentScore}%)
                         </span>
                       ))}
 
-                      {opp.gapSkills.map((s) => (
+                      {(opp.missingSkills || opp.gapSkills).map((s) => (
                         <span
                           key={s.skillId}
                           className="px-2.5 py-0.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] font-medium"
                         >
-                          {s.skillName} (-{s.gapPoints}pts)
+                          ⚠ {s.skillName} (-{s.gapPoints}pts)
                         </span>
                       ))}
                     </div>
@@ -379,7 +446,7 @@ export const StudentOpportunitiesPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Compatibility Score & Action Column */}
+                {/* Match Score & Action Column */}
                 <div className="flex flex-row lg:flex-col items-center lg:items-end justify-between gap-4 shrink-0 pt-4 lg:pt-0 border-t lg:border-t-0 border-slate-800">
                   {/* Radial / Score Gauge */}
                   <div
@@ -403,7 +470,7 @@ export const StudentOpportunitiesPage: React.FC = () => {
                     to={`/student/opportunities/${opp.id}`}
                     className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-brand-600 to-sky-500 hover:from-brand-500 hover:to-sky-400 text-white text-xs font-bold shadow-md shadow-sky-500/20 transition-all hover:scale-[1.02]"
                   >
-                    <span>View Details & Roadmap</span>
+                    <span>View Breakdown</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
                 </div>

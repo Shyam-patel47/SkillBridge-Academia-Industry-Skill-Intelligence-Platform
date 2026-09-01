@@ -1,5 +1,19 @@
 import { apiClient } from "../lib/apiClient";
 
+export interface FactorContribution {
+  score: number;
+  weightPercentage: number;
+  weightedContribution: number;
+}
+
+export interface MatchFactorBreakdown {
+  skillCompatibility: FactorContribution;
+  eligibility: FactorContribution;
+  careerInterest: FactorContribution;
+  experience: FactorContribution;
+  locationPreference: FactorContribution;
+}
+
 export interface StudentOpportunityItem {
   id: string;
   title: string;
@@ -28,6 +42,7 @@ export interface StudentOpportunityItem {
     isVerified: boolean;
   };
   compatibilityScore: number;
+  matchScore: number;
   matchFit: "HIGH_FIT" | "MODERATE_FIT" | "DEVELOPING";
   explanation: string;
   academicEligibility: {
@@ -42,6 +57,31 @@ export interface StudentOpportunityItem {
       studentGradYear?: number | null;
     };
   };
+  eligibilityResult?: {
+    isEligible: boolean;
+    cgpaMet: boolean;
+    branchMet: boolean;
+    gradYearMet: boolean;
+    score: number;
+  };
+  interestMatch?: {
+    isMatched: boolean;
+    matchedInterests: string[];
+    score: number;
+  };
+  experienceMatch?: {
+    projectCount: number;
+    certificationCount: number;
+    assessmentCount: number;
+    score: number;
+  };
+  locationMatch?: {
+    isMatched: boolean;
+    preferredLocations: string[];
+    workModePref: string;
+    score: number;
+  };
+  breakdown?: MatchFactorBreakdown;
   matchingSkills: Array<{
     skillId: string;
     skillName: string;
@@ -52,6 +92,15 @@ export interface StudentOpportunityItem {
     isSatisfied: boolean;
   }>;
   gapSkills: Array<{
+    skillId: string;
+    skillName: string;
+    categoryName?: string;
+    studentScore: number;
+    benchmarkScore: number;
+    gapPoints: number;
+    isMandatory: boolean;
+  }>;
+  missingSkills?: Array<{
     skillId: string;
     skillName: string;
     categoryName?: string;
