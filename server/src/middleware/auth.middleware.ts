@@ -37,3 +37,27 @@ export const authenticate = (
   req.user = decoded;
   next();
 };
+
+export const optionalAuthenticate = (
+  req: Request,
+  _res: Response,
+  next: NextFunction,
+): void => {
+  let token: string | undefined;
+
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    token = authHeader.split(" ")[1];
+  } else if (req.cookies && req.cookies.accessToken) {
+    token = req.cookies.accessToken;
+  }
+
+  if (token) {
+    const decoded = verifyAccessToken(token);
+    if (decoded) {
+      req.user = decoded;
+    }
+  }
+
+  next();
+};

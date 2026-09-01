@@ -6,6 +6,8 @@ import { skillRoutes } from "../modules/skills/skill.routes.js";
 import { assessmentRoutes } from "../modules/assessments/assessment.routes.js";
 import { careerRoutes } from "../modules/careers/career.routes.js";
 import { learningRoutes } from "../modules/learning/learning.routes.js";
+import { companyRoutes } from "../modules/companies/company.routes.js";
+import { opportunityRoutes } from "../modules/opportunities/opportunity.routes.js";
 import { testRoleRoutes } from "./test-role.routes.js";
 
 const router = Router();
@@ -30,6 +32,12 @@ router.use("/careers", careerRoutes);
 
 // Learning Recommendations & Programs routes
 router.use("/learning", learningRoutes);
+
+// Company & Industry Portal routes
+router.use("/companies", companyRoutes);
+
+// Industry Opportunities routes
+router.use("/opportunities", opportunityRoutes);
 
 // RBAC Test routes
 router.use("/test-role", testRoleRoutes);

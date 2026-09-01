@@ -25,6 +25,11 @@ import { AssessmentCatalogPage } from "../pages/student/AssessmentCatalogPage";
 import { AssessmentSessionPage } from "../pages/student/AssessmentSessionPage";
 import { AssessmentResultPage } from "../pages/student/AssessmentResultPage";
 import { IndustryDashboardPage } from "../pages/dashboards/IndustryDashboardPage";
+import { CompanyProfilePage } from "../pages/industry/CompanyProfilePage";
+import { IndustryOpportunitiesPage } from "../pages/industry/IndustryOpportunitiesPage";
+import { CreateOpportunityPage } from "../pages/industry/CreateOpportunityPage";
+import { EditOpportunityPage } from "../pages/industry/EditOpportunityPage";
+import { OpportunityDetailPage } from "../pages/industry/OpportunityDetailPage";
 import { InstitutionDashboardPage } from "../pages/dashboards/InstitutionDashboardPage";
 import { AdminDashboardPage } from "../pages/dashboards/AdminDashboardPage";
 import { AdminSkillTaxonomyPage } from "../pages/admin/AdminSkillTaxonomyPage";
@@ -129,39 +134,24 @@ export const AppRoutes: React.FC = () => {
       >
         <Route index element={<Navigate to="/industry/dashboard" replace />} />
         <Route path="dashboard" element={<IndustryDashboardPage />} />
+        <Route path="profile" element={<CompanyProfilePage />} />
+        <Route path="opportunities" element={<IndustryOpportunitiesPage />} />
         <Route
-          path="create-opportunity"
-          element={
-            <FeaturePlaceholder
-              title="Post New Opportunity"
-              subtitle="Define role requirements, required skill benchmarks, and candidate eligibility criteria."
-            />
-          }
+          path="opportunities/create"
+          element={<CreateOpportunityPage />}
         />
+        <Route path="opportunities/:id" element={<OpportunityDetailPage />} />
         <Route
-          path="opportunities"
-          element={
-            <FeaturePlaceholder
-              title="Active Opportunity Catalog"
-              subtitle="View and manage live job and internship listings."
-            />
-          }
+          path="opportunities/:id/edit"
+          element={<EditOpportunityPage />}
         />
+        <Route path="create-opportunity" element={<CreateOpportunityPage />} />
         <Route
           path="applicants"
           element={
             <FeaturePlaceholder
               title="Applicant Review & Ranking Pipeline"
               subtitle="Review candidates ranked by deterministic skill compatibility scores."
-            />
-          }
-        />
-        <Route
-          path="profile"
-          element={
-            <FeaturePlaceholder
-              title="Company Profile & Verification"
-              subtitle="Manage enterprise details and official verification status."
             />
           }
         />
