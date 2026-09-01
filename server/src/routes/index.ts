@@ -10,6 +10,7 @@ import { companyRoutes } from "../modules/companies/company.routes.js";
 import { opportunityRoutes } from "../modules/opportunities/opportunity.routes.js";
 import { applicationRoutes } from "../modules/applications/application.routes.js";
 import { portfolioRoutes } from "../modules/portfolios/portfolio.routes.js";
+import { institutionRoutes } from "../modules/institutions/institution.routes.js";
 import { testRoleRoutes } from "./test-role.routes.js";
 
 const router = Router();
@@ -46,6 +47,9 @@ router.use("/applications", applicationRoutes);
 
 // Digital Portfolio routes
 router.use("/portfolios", portfolioRoutes);
+
+// Institution Analytics routes
+router.use("/institutions", institutionRoutes);
 
 // RBAC Test routes
 router.use("/test-role", testRoleRoutes);
