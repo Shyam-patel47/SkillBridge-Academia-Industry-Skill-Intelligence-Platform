@@ -11,6 +11,9 @@ import {
   ExternalLink,
   X,
   MessageSquare,
+  CheckCircle2,
+  AlertTriangle,
+  RotateCcw,
 } from "lucide-react";
 import {
   applicationService,
@@ -23,14 +26,20 @@ import {
 } from "../../services/opportunityService";
 
 export const RecruiterApplicantsPage: React.FC = () => {
-  const { id: opportunityId } = useParams<{ id?: string }>();
+  const { id: routeOppId } = useParams<{ id?: string }>();
   const queryClient = useQueryClient();
 
-  const [selectedOppId, setSelectedOppId] = useState<string>(
-    opportunityId || "",
-  );
+  const [selectedOppId, setSelectedOppId] = useState<string>(routeOppId || "");
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<string>("ALL");
+  const [minMatchScore, setMinMatchScore] = useState<number | undefined>(
+    undefined,
+  );
+  const [minCgpa, setMinCgpa] = useState<number | undefined>(undefined);
+  const [branch, setBranch] = useState<string>("");
+  const [gradYear, setGradYear] = useState<number | undefined>(undefined);
+  const [skillFilter, setSkillFilter] = useState<string>("");
+
   const [selectedApplication, setSelectedApplication] =
     useState<ApplicationItem | null>(null);
   const [statusNotesInput, setStatusNotesInput] = useState("");
@@ -41,14 +50,30 @@ export const RecruiterApplicantsPage: React.FC = () => {
     queryFn: () => opportunityService.getMyOpportunities(),
   });
 
-  // Fetch Applicants
+  // Fetch Ranked Applicants with Multi-Filters
   const { data: applicants = [], isLoading } = useQuery<ApplicationItem[]>({
-    queryKey: ["recruiter", "applicants", selectedOppId, activeTab, search],
+    queryKey: [
+      "recruiter",
+      "applicants",
+      selectedOppId,
+      activeTab,
+      search,
+      minMatchScore,
+      minCgpa,
+      branch,
+      gradYear,
+      skillFilter,
+    ],
     queryFn: () =>
       applicationService.getRecruiterApplications({
         opportunityId: selectedOppId || undefined,
         status: activeTab !== "ALL" ? activeTab : undefined,
         search: search || undefined,
+        minMatchScore: minMatchScore || undefined,
+        minCgpa: minCgpa || undefined,
+        branch: branch || undefined,
+        gradYear: gradYear || undefined,
+        skill: skillFilter || undefined,
       }),
   });
 
@@ -62,17 +87,40 @@ export const RecruiterApplicantsPage: React.FC = () => {
       status: ApplicationStatus;
       statusNotes?: string;
     }) => applicationService.updateStatus(id, status, statusNotes),
-    onSuccess: () => {
+    onSuccess: (updatedApp) => {
       queryClient.invalidateQueries({ queryKey: ["recruiter", "applicants"] });
-      if (selectedApplication) {
+      if (selectedApplication && selectedApplication.id === updatedApp.id) {
         setSelectedApplication((prev) =>
           prev
-            ? { ...prev, statusNotes: statusNotesInput || prev.statusNotes }
+            ? {
+                ...prev,
+                status: updatedApp.status,
+                statusNotes: updatedApp.statusNotes || prev.statusNotes,
+              }
             : null,
         );
       }
     },
   });
+
+  const handleResetFilters = () => {
+    setSearch("");
+    setMinMatchScore(undefined);
+    setMinCgpa(undefined);
+    setBranch("");
+    setGradYear(undefined);
+    setSkillFilter("");
+    setActiveTab("ALL");
+  };
+
+  const hasActiveFilters =
+    Boolean(search) ||
+    minMatchScore !== undefined ||
+    minCgpa !== undefined ||
+    Boolean(branch) ||
+    gradYear !== undefined ||
+    Boolean(skillFilter) ||
+    activeTab !== "ALL";
 
   // KPI calculations
   const totalCount = applicants.length;
@@ -149,6 +197,36 @@ export const RecruiterApplicantsPage: React.FC = () => {
     }
   };
 
+  const getRankBadge = (rank?: number) => {
+    if (!rank) return null;
+    if (rank === 1) {
+      return (
+        <span className="px-2.5 py-0.5 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-mono font-extrabold flex items-center gap-1 shadow-sm">
+          <span>🥇 Rank #1</span>
+        </span>
+      );
+    }
+    if (rank === 2) {
+      return (
+        <span className="px-2.5 py-0.5 rounded-lg bg-slate-300/20 border border-slate-300/40 text-slate-200 text-xs font-mono font-bold flex items-center gap-1">
+          <span>🥈 Rank #2</span>
+        </span>
+      );
+    }
+    if (rank === 3) {
+      return (
+        <span className="px-2.5 py-0.5 rounded-lg bg-amber-700/20 border border-amber-700/40 text-amber-400 text-xs font-mono font-bold flex items-center gap-1">
+          <span>🥉 Rank #3</span>
+        </span>
+      );
+    }
+    return (
+      <span className="px-2 py-0.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-400 text-xs font-mono font-bold">
+        Rank #{rank}
+      </span>
+    );
+  };
+
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-16">
       {/* Hero Banner */}
@@ -156,15 +234,15 @@ export const RecruiterApplicantsPage: React.FC = () => {
         <div className="space-y-2 z-10">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-300 text-xs font-semibold">
             <Users className="w-3.5 h-3.5 text-sky-400" />
-            <span>Recruiter Candidate Pipeline</span>
+            <span>AI-Free Explainable Candidate Intelligence Engine</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
-            Applicant Management Hub
+            Candidate Ranking & Pipeline
           </h1>
           <p className="text-sm text-slate-400 max-w-2xl leading-relaxed">
-            Review candidates ranked by mathematical skill match scores. Screen
-            verified competency proof, shortlist applicants, and manage
-            recruitment stage transitions.
+            Candidates evaluated and ranked by multi-dimensional matching: Skill
+            Compatibility (50%), Academic Eligibility (20%), Career Interest
+            (15%), Experience (10%), and Location (5%).
           </p>
         </div>
 
@@ -190,7 +268,7 @@ export const RecruiterApplicantsPage: React.FC = () => {
 
         <div className="glass-panel p-4 rounded-3xl border border-slate-800 space-y-1">
           <span className="text-xs font-mono text-slate-400">
-            Pending Review
+            Applied (Review)
           </span>
           <div className="text-2xl font-extrabold font-mono text-sky-400">
             {appliedCount}
@@ -205,7 +283,7 @@ export const RecruiterApplicantsPage: React.FC = () => {
         </div>
 
         <div className="glass-panel p-4 rounded-3xl border border-slate-800 space-y-1">
-          <span className="text-xs font-mono text-slate-400">Interviewing</span>
+          <span className="text-xs font-mono text-slate-400">In Interview</span>
           <div className="text-2xl font-extrabold font-mono text-purple-400">
             {interviewCount}
           </div>
@@ -221,18 +299,22 @@ export const RecruiterApplicantsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Filter & Opportunity Selection Cockpit */}
-      <div className="glass-panel p-5 rounded-3xl border border-slate-800 space-y-4">
+      {/* Multi-Dimensional Filter Cockpit */}
+      <div className="glass-panel p-5 sm:p-6 rounded-3xl border border-slate-800 space-y-4">
+        {/* Primary Filter Row */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {/* Opportunity Dropdown */}
           <div className="sm:col-span-1">
+            <label className="text-[11px] font-mono text-slate-400 block mb-1">
+              Select Opportunity Posting
+            </label>
             <select
               value={selectedOppId}
               onChange={(e) => setSelectedOppId(e.target.value)}
               className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs font-semibold focus:outline-none focus:border-sky-500"
             >
               <option value="">
-                All Company Postings ({opportunities.length})
+                All Active Postings ({opportunities.length})
               </option>
               {opportunities.map((opp) => (
                 <option key={opp.id} value={opp.id}>
@@ -243,20 +325,130 @@ export const RecruiterApplicantsPage: React.FC = () => {
           </div>
 
           {/* Search Box */}
-          <div className="sm:col-span-2 relative">
-            <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-500" />
+          <div className="sm:col-span-2">
+            <label className="text-[11px] font-mono text-slate-400 block mb-1">
+              Search Candidates
+            </label>
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-500" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search by candidate name, college, branch, or bio..."
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs placeholder-slate-500 focus:outline-none focus:border-sky-500"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Secondary Filter Row (Multi-Dimensional Criteria) */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-slate-850">
+          {/* Match Score Filter */}
+          <div>
+            <label className="text-[11px] font-mono text-slate-400 block mb-1">
+              Min Match Score
+            </label>
+            <select
+              value={minMatchScore !== undefined ? String(minMatchScore) : ""}
+              onChange={(e) =>
+                setMinMatchScore(
+                  e.target.value ? Number(e.target.value) : undefined,
+                )
+              }
+              className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs font-mono focus:outline-none focus:border-sky-500"
+            >
+              <option value="">Any Score (0–100%)</option>
+              <option value="85">≥ 85% (High Compatibility)</option>
+              <option value="75">≥ 75% (Strong Fit)</option>
+              <option value="60">≥ 60% (Moderate Fit)</option>
+              <option value="50">≥ 50% (Developing)</option>
+            </select>
+          </div>
+
+          {/* Minimum CGPA Filter */}
+          <div>
+            <label className="text-[11px] font-mono text-slate-400 block mb-1">
+              Min CGPA Cutoff
+            </label>
+            <select
+              value={minCgpa !== undefined ? String(minCgpa) : ""}
+              onChange={(e) =>
+                setMinCgpa(e.target.value ? Number(e.target.value) : undefined)
+              }
+              className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs font-mono focus:outline-none focus:border-sky-500"
+            >
+              <option value="">All CGPAs</option>
+              <option value="8.5">≥ 8.5 CGPA</option>
+              <option value="8.0">≥ 8.0 CGPA</option>
+              <option value="7.5">≥ 7.5 CGPA</option>
+              <option value="7.0">≥ 7.0 CGPA</option>
+            </select>
+          </div>
+
+          {/* Academic Branch Filter */}
+          <div>
+            <label className="text-[11px] font-mono text-slate-400 block mb-1">
+              Academic Branch
+            </label>
             <input
               type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search applicants by candidate name, branch, or college..."
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs placeholder-slate-500 focus:outline-none focus:border-sky-500"
+              value={branch}
+              onChange={(e) => setBranch(e.target.value)}
+              placeholder="e.g. Computer Science, IT"
+              className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs placeholder-slate-500 focus:outline-none focus:border-sky-500"
             />
+          </div>
+
+          {/* Graduation Year Filter */}
+          <div>
+            <label className="text-[11px] font-mono text-slate-400 block mb-1">
+              Graduation Batch Year
+            </label>
+            <select
+              value={gradYear !== undefined ? String(gradYear) : ""}
+              onChange={(e) =>
+                setGradYear(e.target.value ? Number(e.target.value) : undefined)
+              }
+              className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs font-mono focus:outline-none focus:border-sky-500"
+            >
+              <option value="">All Batches</option>
+              <option value="2024">Class of 2024</option>
+              <option value="2025">Class of 2025</option>
+              <option value="2026">Class of 2026</option>
+              <option value="2027">Class of 2027</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Skill Keyword & Reset Row */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+          <div className="w-full sm:w-80 relative">
+            <input
+              type="text"
+              value={skillFilter}
+              onChange={(e) => setSkillFilter(e.target.value)}
+              placeholder="Filter by skill (e.g. React, Docker, Python)..."
+              className="w-full pl-3 pr-4 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs placeholder-slate-500 focus:outline-none focus:border-sky-500 font-mono"
+            />
+          </div>
+
+          <div className="flex items-center space-x-2 w-full sm:w-auto justify-end">
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-all"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Reset Filters</span>
+              </button>
+            )}
           </div>
         </div>
 
         {/* Status Filter Tabs */}
-        <div className="flex items-center space-x-1 overflow-x-auto pb-1 text-xs pt-2 border-t border-slate-850">
+        <div className="flex items-center space-x-1 overflow-x-auto pb-1 text-xs pt-3 border-t border-slate-850">
           {[
             "ALL",
             "APPLIED",
@@ -282,34 +474,40 @@ export const RecruiterApplicantsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Candidate Pipeline Stream */}
+      {/* Candidate Pipeline Ranked Stream */}
       {isLoading ? (
         <div className="text-center py-16">
           <Loader2 className="w-8 h-8 animate-spin mx-auto text-sky-400 mb-2" />
           <p className="text-xs font-mono text-slate-400">
-            Loading applicant pipeline...
+            Calculating and sorting candidate rankings by mathematical match
+            score...
           </p>
         </div>
       ) : applicants.length > 0 ? (
         <div className="space-y-4">
-          {applicants.map((app) => {
+          {applicants.map((app, idx) => {
             const student = app.student;
             const matchScore = app.matchScore ?? 0;
             const isHigh = matchScore >= 80;
+            const rank = app.rank ?? idx + 1;
+            const matchingSkills = app.matchingSkills || [];
+            const missingSkills = app.missingSkills || [];
+            const isEligible = app.isEligible ?? true;
 
             return (
               <div
                 key={app.id}
-                className="glass-panel p-6 rounded-3xl border border-slate-800 hover:border-slate-700 transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-6"
+                className="glass-panel p-6 sm:p-7 rounded-3xl border border-slate-800 hover:border-slate-700 transition-all space-y-4 relative overflow-hidden"
               >
-                {/* Candidate Info Column */}
-                <div className="space-y-3 flex-1">
+                {/* Header: Rank + Status + Applied Role */}
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-850 pb-3">
                   <div className="flex flex-wrap items-center gap-2">
+                    {getRankBadge(rank)}
                     {getStatusBadge(app.status)}
 
                     <span className="text-xs font-mono text-slate-400 font-semibold">
-                      Role:{" "}
-                      <span className="text-white">
+                      Applied for:{" "}
+                      <span className="text-white font-bold">
                         {app.opportunity.title}
                       </span>
                     </span>
@@ -322,126 +520,207 @@ export const RecruiterApplicantsPage: React.FC = () => {
                     </span>
                   </div>
 
+                  {/* Academic Eligibility Pill */}
                   <div>
-                    <h3 className="text-lg font-bold text-white hover:text-sky-300 transition-colors">
-                      {student?.fullName || "Candidate"}
-                    </h3>
-
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400 font-mono mt-0.5">
-                      <span>{student?.email}</span>
-                      {student?.branch && <span>• {student.branch}</span>}
-                      {student?.college && <span>• {student.college}</span>}
-                      {student?.cgpa && (
-                        <span className="text-emerald-400 font-bold">
-                          • CGPA: {student.cgpa}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Skills Snapshot */}
-                  {student?.skills && student.skills.length > 0 && (
-                    <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                      <span className="text-[11px] font-mono text-slate-500 mr-1">
-                        Verified Skills:
+                    {isEligible ? (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-bold">
+                        <CheckCircle2 className="w-3 h-3" />
+                        <span>Academic Criteria Satisfied</span>
                       </span>
-                      {student.skills.slice(0, 4).map((s) => (
-                        <span
-                          key={s.skillId}
-                          className="px-2 py-0.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-[11px] font-mono"
-                        >
-                          {s.skillName} ({s.score}%)
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Cover Letter preview */}
-                  {app.coverLetter && (
-                    <p className="text-xs text-slate-400 italic line-clamp-1 bg-slate-950/60 p-2 rounded-xl border border-slate-850">
-                      "{app.coverLetter}"
-                    </p>
-                  )}
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[10px] font-mono font-bold">
+                        <AlertTriangle className="w-3 h-3" />
+                        <span>Academic Cutoff Deficit</span>
+                      </span>
+                    )}
+                  </div>
                 </div>
 
-                {/* Match Score & Action Column */}
-                <div className="flex flex-row lg:flex-col items-center lg:items-end justify-between gap-4 shrink-0 pt-3 lg:pt-0 border-t lg:border-t-0 border-slate-800">
-                  <div className="text-right">
-                    <span className="text-[10px] font-mono text-slate-500 block">
-                      Match Score
-                    </span>
-                    <span
-                      className={`text-2xl font-extrabold font-mono ${
-                        isHigh ? "text-emerald-400" : "text-sky-400"
-                      }`}
-                    >
-                      {matchScore}%
-                    </span>
+                {/* Candidate Overview & Match Matrix */}
+                <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
+                  {/* Left: Candidate Info & Skills */}
+                  <div className="space-y-3 flex-1">
+                    <div>
+                      <h3 className="text-xl font-extrabold text-white hover:text-sky-300 transition-colors">
+                        {student?.fullName || "Candidate"}
+                      </h3>
+
+                      {student?.headline && (
+                        <p className="text-xs text-slate-400 font-sans mt-0.5">
+                          {student.headline}
+                        </p>
+                      )}
+
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400 font-mono mt-1">
+                        <span>{student?.email}</span>
+                        {student?.phone && <span>• {student.phone}</span>}
+                        {student?.branch && <span>• {student.branch}</span>}
+                        {student?.gradYear && (
+                          <span className="text-sky-400">
+                            • Class of {student.gradYear}
+                          </span>
+                        )}
+                        {student?.cgpa && (
+                          <span className="text-emerald-400 font-bold">
+                            • CGPA: {student.cgpa}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Matching Skills vs Skill Gaps */}
+                    <div className="space-y-2 pt-1">
+                      {/* Matching Skills */}
+                      {matchingSkills.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="text-[11px] font-mono text-emerald-400 font-bold mr-1">
+                            ✓ Matches ({matchingSkills.length}):
+                          </span>
+                          {matchingSkills.map((s: any) => (
+                            <span
+                              key={s.skillId}
+                              className="px-2 py-0.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-[11px] font-mono"
+                            >
+                              {s.skillName} ({s.studentScore}%)
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Missing / Gap Skills */}
+                      {missingSkills.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="text-[11px] font-mono text-amber-400 font-bold mr-1">
+                            ⚠ Gaps ({missingSkills.length}):
+                          </span>
+                          {missingSkills.map((s: any) => (
+                            <span
+                              key={s.skillId}
+                              className="px-2 py-0.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] font-mono"
+                            >
+                              {s.skillName} (Needs ≥{s.minScore}%)
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Deterministic Explainable Rationale */}
+                    {app.explanation && (
+                      <div className="p-3 rounded-2xl bg-slate-950/80 border border-slate-850 text-xs text-slate-300 leading-relaxed font-mono flex items-start gap-2">
+                        <Sparkles className="w-3.5 h-3.5 text-sky-400 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="text-sky-400 font-bold">
+                            Deterministic Rationale:{" "}
+                          </span>
+                          <span>{app.explanation}</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
-                  {/* One-Click Pipeline Transition Actions */}
-                  {app.status !== "WITHDRAWN" && (
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      {app.status === "APPLIED" && (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleStatusChange(app.id, "SHORTLISTED")
-                          }
-                          className="px-3 py-1.5 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white text-xs font-bold transition-all"
+                  {/* Right: Match Score Gauge & One-Click Actions */}
+                  <div className="flex flex-col items-start lg:items-end justify-between gap-4 shrink-0 pt-3 lg:pt-0 border-t lg:border-t-0 border-slate-800 lg:w-64">
+                    <div className="text-left lg:text-right w-full">
+                      <span className="text-[10px] font-mono text-slate-500 uppercase font-bold block">
+                        Weighted Match Score
+                      </span>
+                      <div className="flex items-baseline space-x-2 lg:justify-end">
+                        <span
+                          className={`text-3xl font-black font-mono ${
+                            isHigh ? "text-emerald-400" : "text-sky-400"
+                          }`}
                         >
-                          Shortlist
-                        </button>
-                      )}
+                          {matchScore}%
+                        </span>
+                        <span className="text-[10px] font-mono uppercase text-slate-400 font-bold">
+                          {isHigh ? "High Fit" : "Qualified"}
+                        </span>
+                      </div>
 
-                      {(app.status === "APPLIED" ||
-                        app.status === "SHORTLISTED") && (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleStatusChange(app.id, "INTERVIEW")
-                          }
-                          className="px-3 py-1.5 rounded-xl bg-purple-500 hover:bg-purple-400 text-white text-xs font-bold transition-all"
-                        >
-                          Interview
-                        </button>
-                      )}
+                      {/* 5-Factor Mini Progress Breakdown */}
+                      <div className="mt-2 space-y-1 text-[10px] font-mono text-slate-400">
+                        <div className="flex justify-between">
+                          <span>Skills (50%):</span>
+                          <span className="text-sky-400 font-bold">
+                            {app.skillCompatibility ?? matchScore}%
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Eligibility (20%):</span>
+                          <span className="text-emerald-400 font-bold">
+                            {app.eligibilityScore ?? 100}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
 
-                      {app.status === "INTERVIEW" && (
-                        <button
-                          type="button"
-                          onClick={() => handleStatusChange(app.id, "OFFERED")}
-                          className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold transition-all"
-                        >
-                          Extend Offer
-                        </button>
-                      )}
-
-                      {app.status !== "REJECTED" &&
-                        app.status !== "OFFERED" && (
+                    {/* Pipeline Quick Action Buttons */}
+                    {app.status !== "WITHDRAWN" && (
+                      <div className="flex flex-wrap items-center gap-1.5 w-full lg:justify-end pt-2">
+                        {app.status === "APPLIED" && (
                           <button
                             type="button"
                             onClick={() =>
-                              handleStatusChange(app.id, "REJECTED")
+                              handleStatusChange(app.id, "SHORTLISTED")
                             }
-                            className="px-2.5 py-1.5 rounded-xl bg-slate-900 border border-rose-500/30 text-rose-400 hover:bg-rose-500/10 text-xs font-semibold transition-all"
+                            className="px-3 py-1.5 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white text-xs font-bold transition-all"
                           >
-                            Reject
+                            Shortlist
                           </button>
                         )}
 
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedApplication(app);
-                          setStatusNotesInput(app.statusNotes || "");
-                        }}
-                        className="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-sky-400 hover:text-white text-xs font-bold transition-all"
-                      >
-                        Full Dossier
-                      </button>
-                    </div>
-                  )}
+                        {(app.status === "APPLIED" ||
+                          app.status === "SHORTLISTED") && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleStatusChange(app.id, "INTERVIEW")
+                            }
+                            className="px-3 py-1.5 rounded-xl bg-purple-500 hover:bg-purple-400 text-white text-xs font-bold transition-all"
+                          >
+                            Interview
+                          </button>
+                        )}
+
+                        {app.status === "INTERVIEW" && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleStatusChange(app.id, "OFFERED")
+                            }
+                            className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold transition-all"
+                          >
+                            Extend Offer
+                          </button>
+                        )}
+
+                        {app.status !== "REJECTED" &&
+                          app.status !== "OFFERED" && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleStatusChange(app.id, "REJECTED")
+                              }
+                              className="px-2.5 py-1.5 rounded-xl bg-slate-900 border border-rose-500/30 text-rose-400 hover:bg-rose-500/10 text-xs font-semibold transition-all"
+                            >
+                              Reject
+                            </button>
+                          )}
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedApplication(app);
+                            setStatusNotesInput(app.statusNotes || "");
+                          }}
+                          className="px-3 py-1.5 rounded-xl bg-sky-500/10 border border-sky-500/30 text-sky-400 hover:text-white hover:bg-sky-500 text-xs font-bold transition-all"
+                        >
+                          Dossier
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             );
@@ -451,15 +730,24 @@ export const RecruiterApplicantsPage: React.FC = () => {
         <div className="glass-panel p-12 rounded-3xl border border-slate-800 text-center max-w-md mx-auto space-y-3">
           <Users className="w-10 h-10 text-slate-600 mx-auto" />
           <h3 className="text-base font-bold text-white">
-            No applicants found
+            No applicants match your filters
           </h3>
           <p className="text-xs text-slate-400">
-            There are no candidate applications under the selected criteria.
+            Try adjusting your score thresholds, CGPA cutoffs, or search terms
+            to broaden candidate results.
           </p>
+          <button
+            type="button"
+            onClick={handleResetFilters}
+            className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-sky-500 text-white text-xs font-bold mt-2"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Reset All Filters</span>
+          </button>
         </div>
       )}
 
-      {/* Candidate Application Dossier Modal */}
+      {/* Candidate Dossier & Evaluation Modal */}
       {selectedApplication && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
           <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 bg-slate-900 max-w-2xl w-full space-y-6 relative shadow-2xl my-8 max-h-[90vh] overflow-y-auto">
@@ -475,6 +763,7 @@ export const RecruiterApplicantsPage: React.FC = () => {
             <div className="space-y-2 border-b border-slate-800 pb-4">
               <div className="flex items-center space-x-2">
                 {getStatusBadge(selectedApplication.status)}
+                {getRankBadge(selectedApplication.rank)}
                 <span className="text-xs font-mono text-slate-400">
                   Applied for {selectedApplication.opportunity.title}
                 </span>
@@ -495,7 +784,30 @@ export const RecruiterApplicantsPage: React.FC = () => {
                 {selectedApplication.student?.branch && (
                   <span>• {selectedApplication.student.branch}</span>
                 )}
+                {selectedApplication.student?.gradYear && (
+                  <span>• Batch {selectedApplication.student.gradYear}</span>
+                )}
               </div>
+            </div>
+
+            {/* Match Score & Explainability Summary */}
+            <div className="p-4 rounded-2xl bg-[#060a14] border border-slate-850 space-y-2 text-xs font-mono">
+              <div className="flex items-center justify-between">
+                <span className="text-sky-400 font-bold flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4" />
+                  <span>
+                    5-Factor Match Evaluation: {selectedApplication.matchScore}%
+                  </span>
+                </span>
+                <span className="text-emerald-400 font-bold">
+                  {selectedApplication.isEligible
+                    ? "Eligible"
+                    : "Cutoff Deficit"}
+                </span>
+              </div>
+              <p className="text-slate-300 leading-relaxed font-sans">
+                {selectedApplication.explanation}
+              </p>
             </div>
 
             {/* Resume Link */}
@@ -558,7 +870,7 @@ export const RecruiterApplicantsPage: React.FC = () => {
             <div className="space-y-3 pt-4 border-t border-slate-800">
               <span className="text-xs font-mono text-slate-400 uppercase font-bold flex items-center gap-1.5">
                 <MessageSquare className="w-3.5 h-3.5" />
-                <span>Internal Recruiter Notes / Remarks</span>
+                <span>Internal Recruiter Remarks / Interview Notes</span>
               </span>
 
               <textarea
@@ -570,7 +882,7 @@ export const RecruiterApplicantsPage: React.FC = () => {
               />
 
               <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-                <div className="flex items-center space-x-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
                     onClick={() =>

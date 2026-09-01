@@ -10,11 +10,35 @@ export type ApplicationStatus =
   | "JOINED"
   | "WITHDRAWN";
 
+export interface MatchingSkillItem {
+  skillId: string;
+  skillName: string;
+  studentScore: number;
+  minScore: number;
+  isMandatory?: boolean;
+}
+
+export interface SkillGapItem {
+  skillId: string;
+  skillName: string;
+  studentScore: number;
+  minScore: number;
+  deficit?: number;
+  isMandatory?: boolean;
+}
+
 export interface ApplicationItem {
   id: string;
+  rank?: number;
   opportunityId: string;
   status: ApplicationStatus;
   matchScore: number;
+  skillCompatibility?: number;
+  eligibilityScore?: number;
+  isEligible?: boolean;
+  matchingSkills?: MatchingSkillItem[];
+  missingSkills?: SkillGapItem[];
+  explanation?: string;
   matchBreakdown?: any;
   resumeUrl?: string | null;
   coverLetter?: string | null;
@@ -38,7 +62,7 @@ export interface ApplicationItem {
       industry?: string | null;
       logoUrl?: string | null;
       location?: string | null;
-      isVerified: boolean;
+      isVerified?: boolean;
     };
     requiredSkillsCount?: number;
   };
@@ -65,6 +89,17 @@ export interface ApplyPayload {
   opportunityId: string;
   resumeUrl?: string;
   coverLetter?: string;
+}
+
+export interface RecruiterFilterParams {
+  opportunityId?: string;
+  status?: string;
+  search?: string;
+  minMatchScore?: number;
+  minCgpa?: number;
+  branch?: string;
+  gradYear?: number;
+  skill?: string;
 }
 
 export const applicationService = {
@@ -119,13 +154,11 @@ export const applicationService = {
   },
 
   /**
-   * Recruiter: List Applicants
+   * Recruiter: List Applicants with 5-factor ranking and multi-filters
    */
-  async getRecruiterApplications(params?: {
-    opportunityId?: string;
-    status?: string;
-    search?: string;
-  }): Promise<ApplicationItem[]> {
+  async getRecruiterApplications(
+    params?: RecruiterFilterParams,
+  ): Promise<ApplicationItem[]> {
     const res = await apiClient.get<{
       success: boolean;
       data: { applications: ApplicationItem[]; count: number };

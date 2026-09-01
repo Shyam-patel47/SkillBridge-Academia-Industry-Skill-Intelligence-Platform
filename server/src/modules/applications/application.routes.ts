@@ -8,6 +8,7 @@ import {
   applyOpportunitySchema,
   updateApplicationStatusSchema,
   withdrawApplicationSchema,
+  recruiterApplicantsQuerySchema,
 } from "./application.schema.js";
 
 const router = Router();
@@ -61,6 +62,7 @@ router.get(
   "/recruiter",
   authenticate,
   authorizeRoles(UserRole.INDUSTRY, UserRole.SUPER_ADMIN),
+  validateRequest(recruiterApplicantsQuerySchema),
   (req, res, next) =>
     applicationController.getRecruiterApplications(req, res, next),
 );

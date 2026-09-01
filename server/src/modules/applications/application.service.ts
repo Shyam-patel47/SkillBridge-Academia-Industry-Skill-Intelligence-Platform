@@ -451,13 +451,21 @@ export class ApplicationService {
   }
 
   /**
-   * Recruiter: List applicants for an opportunity or all company opportunities
+   * Recruiter: List applicants for an opportunity or all company opportunities (Ranked by Match Score)
    */
   async getRecruiterApplications(
     userId: string,
     _userRole: string,
     opportunityId?: string,
-    filters?: { status?: string; search?: string },
+    filters?: {
+      status?: string;
+      search?: string;
+      minMatchScore?: number;
+      minCgpa?: number;
+      branch?: string;
+      gradYear?: number;
+      skill?: string;
+    },
   ) {
     const company = await companyService.getProfileByUserId(userId);
 
@@ -489,6 +497,34 @@ export class ApplicationService {
       where.status = filters.status as ApplicationStatus;
     }
 
+    if (filters?.minMatchScore !== undefined && filters.minMatchScore > 0) {
+      where.matchScore = { gte: filters.minMatchScore };
+    }
+
+    const studentWhere: any = {};
+
+    if (filters?.minCgpa !== undefined && filters.minCgpa > 0) {
+      studentWhere.cgpa = { gte: filters.minCgpa };
+    }
+
+    if (filters?.branch) {
+      studentWhere.branch = { contains: filters.branch, mode: "insensitive" };
+    }
+
+    if (filters?.gradYear !== undefined && filters.gradYear > 0) {
+      studentWhere.gradYear = filters.gradYear;
+    }
+
+    if (filters?.skill) {
+      studentWhere.skills = {
+        some: {
+          skill: {
+            name: { contains: filters.skill, mode: "insensitive" },
+          },
+        },
+      };
+    }
+
     if (filters?.search) {
       where.OR = [
         {
@@ -506,7 +542,16 @@ export class ApplicationService {
             college: { contains: filters.search, mode: "insensitive" },
           },
         },
+        {
+          student: {
+            headline: { contains: filters.search, mode: "insensitive" },
+          },
+        },
       ];
+    }
+
+    if (Object.keys(studentWhere).length > 0) {
+      where.student = { ...(where.student || {}), ...studentWhere };
     }
 
     const applications = await prisma.application.findMany({
@@ -532,41 +577,66 @@ export class ApplicationService {
             location: true,
             deadline: true,
             isActive: true,
+            company: {
+              select: {
+                id: true,
+                companyName: true,
+                logoUrl: true,
+              },
+            },
           },
         },
       },
     });
 
-    return applications.map((app) => ({
-      id: app.id,
-      opportunityId: app.opportunityId,
-      status: app.status,
-      matchScore: app.matchScore,
-      matchBreakdown: app.matchBreakdown,
-      resumeUrl: app.resumeUrl,
-      coverLetter: app.coverLetter,
-      statusNotes: app.statusNotes,
-      appliedAt: app.appliedAt,
-      updatedAt: app.updatedAt,
-      opportunity: app.opportunity,
-      student: {
-        id: app.student.id,
-        fullName: app.student.fullName,
-        email: app.student.user.email,
-        phone: app.student.phone,
-        college: app.student.college,
-        branch: app.student.branch,
-        gradYear: app.student.gradYear,
-        cgpa: app.student.cgpa,
-        headline: app.student.headline,
-        skills: app.student.skills.map((ss) => ({
-          skillId: ss.skillId,
-          skillName: ss.skill.name,
-          score: ss.score,
-          verified: ss.isVerified,
-        })),
-      },
-    }));
+    return applications.map((app, index) => {
+      const breakdown = app.matchBreakdown as any;
+      return {
+        id: app.id,
+        rank: index + 1,
+        opportunityId: app.opportunityId,
+        status: app.status,
+        matchScore: app.matchScore ?? 0,
+        skillCompatibility:
+          breakdown?.breakdown?.skillCompatibility?.score ??
+          breakdown?.skillScore ??
+          app.matchScore ??
+          0,
+        eligibilityScore:
+          breakdown?.breakdown?.eligibility?.score ??
+          (breakdown?.eligibilityResult?.isEligible ? 100 : 50),
+        isEligible: breakdown?.eligibilityResult?.isEligible ?? true,
+        matchingSkills: breakdown?.matchingSkills ?? [],
+        missingSkills: breakdown?.missingSkills ?? breakdown?.gapSkills ?? [],
+        explanation:
+          breakdown?.explanation ??
+          `Candidate achieved a ${app.matchScore ?? 0}% match score for this vacancy.`,
+        matchBreakdown: app.matchBreakdown,
+        resumeUrl: app.resumeUrl,
+        coverLetter: app.coverLetter,
+        statusNotes: app.statusNotes,
+        appliedAt: app.appliedAt,
+        updatedAt: app.updatedAt,
+        opportunity: app.opportunity,
+        student: {
+          id: app.student.id,
+          fullName: app.student.fullName,
+          email: app.student.user.email,
+          phone: app.student.phone,
+          college: app.student.college,
+          branch: app.student.branch,
+          gradYear: app.student.gradYear,
+          cgpa: app.student.cgpa,
+          headline: app.student.headline,
+          skills: app.student.skills.map((ss) => ({
+            skillId: ss.skillId,
+            skillName: ss.skill.name,
+            score: ss.score,
+            verified: ss.isVerified,
+          })),
+        },
+      };
+    });
   }
 
   /**

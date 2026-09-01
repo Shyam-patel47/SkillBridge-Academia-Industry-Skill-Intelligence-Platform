@@ -37,6 +37,19 @@ export const withdrawApplicationSchema = z.object({
   }),
 });
 
+export const recruiterApplicantsQuerySchema = z.object({
+  query: z.object({
+    opportunityId: z.string().optional(),
+    status: z.string().optional(),
+    search: z.string().optional(),
+    minMatchScore: z.coerce.number().min(0).max(100).optional(),
+    minCgpa: z.coerce.number().min(0).max(10).optional(),
+    branch: z.string().optional(),
+    gradYear: z.coerce.number().int().optional(),
+    skill: z.string().optional(),
+  }),
+});
+
 export type ApplyOpportunityInput = z.infer<
   typeof applyOpportunitySchema
 >["body"];
@@ -46,3 +59,6 @@ export type UpdateApplicationStatusInput = z.infer<
 export type WithdrawApplicationInput = z.infer<
   typeof withdrawApplicationSchema
 >["body"];
+export type RecruiterApplicantsQueryInput = z.infer<
+  typeof recruiterApplicantsQuerySchema
+>["query"];

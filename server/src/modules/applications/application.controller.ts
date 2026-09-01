@@ -105,7 +105,7 @@ export class ApplicationController {
   }
 
   /**
-   * Recruiter: List Applicants for Company / Opportunity
+   * Recruiter: List Applicants for Company / Opportunity (Ranked by Match Score)
    */
   async getRecruiterApplications(
     req: Request,
@@ -115,21 +115,44 @@ export class ApplicationController {
     try {
       const userId = req.user!.id;
       const userRole = req.user!.role;
-      const { opportunityId, status, search } = req.query as {
+      const {
+        opportunityId,
+        status,
+        search,
+        minMatchScore,
+        minCgpa,
+        branch,
+        gradYear,
+        skill,
+      } = req.query as {
         opportunityId?: string;
         status?: string;
         search?: string;
+        minMatchScore?: string;
+        minCgpa?: string;
+        branch?: string;
+        gradYear?: string;
+        skill?: string;
       };
+
       const applications = await applicationService.getRecruiterApplications(
         userId,
         userRole,
         opportunityId,
-        { status, search },
+        {
+          status,
+          search,
+          minMatchScore: minMatchScore ? Number(minMatchScore) : undefined,
+          minCgpa: minCgpa ? Number(minCgpa) : undefined,
+          branch,
+          gradYear: gradYear ? Number(gradYear) : undefined,
+          skill,
+        },
       );
       sendSuccess(
         res,
         { applications, count: applications.length },
-        "Applicants retrieved successfully",
+        "Applicants retrieved and ranked successfully",
         200,
       );
     } catch (error) {
