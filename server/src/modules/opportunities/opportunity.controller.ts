@@ -30,6 +30,78 @@ export class OpportunityController {
     }
   }
 
+  async getStudentFeed(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const userId = req.user!.id;
+      const {
+        search,
+        type,
+        skillId,
+        location,
+        workMode,
+        eligibilityOnly,
+        sortBy,
+      } = req.query as {
+        search?: string;
+        type?: string;
+        skillId?: string;
+        location?: string;
+        workMode?: string;
+        eligibilityOnly?: string;
+        sortBy?: "match" | "recent" | "deadline";
+      };
+
+      const result = await opportunityService.getStudentOpportunityFeed(
+        userId,
+        {
+          search,
+          type,
+          skillId,
+          location,
+          workMode,
+          eligibilityOnly: eligibilityOnly === "true",
+          sortBy,
+        },
+      );
+
+      sendSuccess(
+        res,
+        result,
+        "Student opportunity discovery feed retrieved successfully",
+        200,
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getStudentOpportunityDetail(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const idOrSlug = req.params.id as string;
+      const userId = req.user!.id;
+      const opportunity = await opportunityService.getStudentOpportunityDetail(
+        idOrSlug,
+        userId,
+      );
+      sendSuccess(
+        res,
+        { opportunity },
+        "Opportunity details and compatibility retrieved successfully",
+        200,
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async getOpportunityById(
     req: Request,
     res: Response,

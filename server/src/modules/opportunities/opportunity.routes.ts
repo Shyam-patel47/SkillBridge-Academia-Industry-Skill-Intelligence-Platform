@@ -15,6 +15,23 @@ import {
 
 const router = Router();
 
+// Student Opportunity Discovery Feed (Protected: STUDENT, SUPER_ADMIN)
+router.get(
+  "/feed",
+  authenticate,
+  authorizeRoles(UserRole.STUDENT, UserRole.SUPER_ADMIN),
+  (req, res, next) => opportunityController.getStudentFeed(req, res, next),
+);
+
+// Student Single Opportunity Details with Compatibility (Protected: STUDENT, SUPER_ADMIN)
+router.get(
+  "/:id/student-details",
+  authenticate,
+  authorizeRoles(UserRole.STUDENT, UserRole.SUPER_ADMIN),
+  (req, res, next) =>
+    opportunityController.getStudentOpportunityDetail(req, res, next),
+);
+
 // Company's Own Postings (Protected: INDUSTRY, SUPER_ADMIN)
 router.get(
   "/company/me",
