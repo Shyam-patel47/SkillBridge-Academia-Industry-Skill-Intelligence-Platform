@@ -81,6 +81,10 @@ const testSuites = [
     name: "Production Readiness & Health Probe",
     file: "production-readiness.test.ts",
   },
+  {
+    name: "Docker Containerization & CI/CD Pipeline",
+    file: "docker-ci.test.ts",
+  },
 ];
 
 console.log(

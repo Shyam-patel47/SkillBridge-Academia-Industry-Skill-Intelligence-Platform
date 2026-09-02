@@ -1,0 +1,104 @@
+name: SkillBridge CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # -------------------------------------------------------------
+  # Job 1: Test, Lint & Type-Check Verification
+  # -------------------------------------------------------------
+  test-and-validate:
+    name: Lint, Test & Type Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: 📦 Install Dependencies
+        run: npm ci
+
+      - name: ⚙️ Generate Prisma Client
+        run: npx prisma generate
+
+      - name: 🔍 Type-Check Server
+        run: npx tsc --noEmit -p server/tsconfig.json
+
+      - name: 🔍 Type-Check Client
+        run: npx tsc --noEmit -p client/tsconfig.json
+
+      - name: 🧪 Execute Platform Test Suites
+        run: npm test
+        env:
+          NODE_ENV: test
+          PORT: 5000
+          DATABASE_URL: "postgresql://postgres:test@localhost:5432/test?sslmode=disable"
+          JWT_ACCESS_SECRET: "ci-test-access-token-secret-key-32-chars-long"
+          JWT_REFRESH_SECRET: "ci-test-refresh-token-secret-key-32-chars-long"
+
+  # -------------------------------------------------------------
+  # Job 2: Production Build Pipeline
+  # -------------------------------------------------------------
+  build-production:
+    name: Build Production Artifacts
+    needs: test-and-validate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: 📦 Install Dependencies
+        run: npm ci
+
+      - name: ⚙️ Generate Prisma Client
+        run: npx prisma generate
+
+      - name: 🏗️ Compile Server and Client Bundles
+        run: npm run build
+
+  # -------------------------------------------------------------
+  # Job 3: Docker Build Verification
+  # -------------------------------------------------------------
+  docker-build:
+    name: Validate Docker Container Builds
+    needs: build-production
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🐳 Set up Docker Buildx
+        uses: actions/docker-buildx-action@v3
+
+      - name: 🐳 Build Backend Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./server/Dockerfile
+          push: false
+          tags: skillbridge-server:ci-test
+
+      - name: 🐳 Build Frontend Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./client/Dockerfile
+          push: false
+          tags: skillbridge-client:ci-test
