@@ -21,24 +21,51 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error),
 );
 
-// Response Interceptor: Handle 401 and Token Refresh
-let isRefreshing = false;
-let failedQueue: Array<{
-  resolve: (value?: unknown) => void;
-  reject: (reason?: unknown) => void;
-}> = [];
+// Concurrency-safe in-flight refresh promise singleton
+let refreshPromise: Promise<string> | null = null;
 
-const processQueue = (error: Error | null) => {
-  failedQueue.forEach((prom) => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve();
+/**
+ * Executes a single token refresh call, sharing the active promise
+ * among all concurrent 401 requests to prevent multiple refresh calls
+ * and token rotation replay errors.
+ */
+const getRefreshTokenPromise = async (): Promise<string> => {
+  if (refreshPromise) {
+    return refreshPromise;
+  }
+
+  const currentRefreshToken = useAuthStore.getState().refreshToken;
+  if (!currentRefreshToken) {
+    useAuthStore.getState().clearAuth();
+    throw new Error("No refresh token available");
+  }
+
+  refreshPromise = (async () => {
+    try {
+      const response = await axios.post("/api/v1/auth/refresh", {
+        refreshToken: currentRefreshToken,
+      });
+
+      const newAccessToken = response.data.data.tokens.accessToken;
+      const newRefreshToken = response.data.data.tokens.refreshToken;
+
+      // Update persisted store with rotated tokens
+      useAuthStore.getState().setTokens(newAccessToken, newRefreshToken);
+
+      return newAccessToken;
+    } catch (err) {
+      // Clear auth on refresh failure to prevent infinite loops
+      useAuthStore.getState().clearAuth();
+      throw err;
+    } finally {
+      refreshPromise = null;
     }
-  });
-  failedQueue = [];
+  })();
+
+  return refreshPromise;
 };
 
+// Response Interceptor: Handle 401 and Concurrency-Safe Token Refresh
 apiClient.interceptors.response.use(
   (response) => response,
   async (
@@ -48,7 +75,7 @@ apiClient.interceptors.response.use(
       _retry?: boolean;
     };
 
-    // If 401 and not already retried
+    // If 401 and request has not already been retried
     if (
       error.response?.status === 401 &&
       originalRequest &&
@@ -57,34 +84,10 @@ apiClient.interceptors.response.use(
       !originalRequest.url?.includes("/auth/register") &&
       !originalRequest.url?.includes("/auth/refresh")
     ) {
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        })
-          .then(() => apiClient(originalRequest))
-          .catch((err) => Promise.reject(err));
-      }
-
       originalRequest._retry = true;
-      isRefreshing = true;
-
-      const refreshToken = useAuthStore.getState().refreshToken;
-      if (!refreshToken) {
-        useAuthStore.getState().clearAuth();
-        isRefreshing = false;
-        return Promise.reject(error);
-      }
 
       try {
-        const response = await axios.post("/api/v1/auth/refresh", {
-          refreshToken,
-        });
-
-        const newAccessToken = response.data.data.tokens.accessToken;
-        const newRefreshToken = response.data.data.tokens.refreshToken;
-
-        useAuthStore.getState().setTokens(newAccessToken, newRefreshToken);
-        processQueue(null);
+        const newAccessToken = await getRefreshTokenPromise();
 
         if (originalRequest.headers) {
           originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
@@ -92,11 +95,7 @@ apiClient.interceptors.response.use(
 
         return apiClient(originalRequest);
       } catch (refreshError) {
-        processQueue(refreshError as Error);
-        useAuthStore.getState().clearAuth();
         return Promise.reject(refreshError);
-      } finally {
-        isRefreshing = false;
       }
     }
 

@@ -1,8 +1,9 @@
-import express, { Express } from "express";
+import express, { Express, Request, Response, NextFunction } from "express";
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
 import cookieParser from "cookie-parser";
+import crypto from "crypto";
 import { config } from "./config/index.js";
 import { apiRoutes } from "./routes/index.js";
 import { errorHandler } from "./middleware/error.middleware.js";
@@ -13,11 +14,29 @@ import {
   aiLimiter,
 } from "./middleware/rateLimiter.js";
 
+// Extend Express Request type with correlation id
+declare global {
+  namespace Express {
+    interface Request {
+      id?: string;
+    }
+  }
+}
+
 export const createApp = (): Express => {
   const app = express();
 
   // Trust first proxy if behind reverse proxy (Nginx / Cloudflare / Load Balancer)
   app.set("trust proxy", 1);
+
+  // Request Correlation ID Middleware (X-Request-Id)
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    const incomingReqId = req.headers["x-request-id"] as string | undefined;
+    const reqId = incomingReqId || crypto.randomUUID();
+    req.id = reqId;
+    res.setHeader("X-Request-Id", reqId);
+    next();
+  });
 
   // Hardened Security Headers via Helmet
   app.use(
@@ -80,11 +99,17 @@ export const createApp = (): Express => {
       },
       credentials: true,
       methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-      allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+      allowedHeaders: [
+        "Content-Type",
+        "Authorization",
+        "X-Requested-With",
+        "X-Request-Id",
+      ],
       exposedHeaders: [
         "RateLimit-Limit",
         "RateLimit-Remaining",
         "RateLimit-Reset",
+        "X-Request-Id",
       ],
       maxAge: 86400, // 24 hours preflight cache
     }),
@@ -93,11 +118,32 @@ export const createApp = (): Express => {
   // Cookie parser
   app.use(cookieParser());
 
-  // Request Logging
+  // Environment-Aware Structured Request Logging
+  morgan.token("req-id", (req: Request) => req.id || "-");
+
   if (config.isDevelopment) {
-    app.use(morgan("dev"));
+    app.use(
+      morgan(
+        "[:req-id] :method :url :status :response-time ms - :res[content-length]",
+      ),
+    );
   } else {
-    app.use(morgan("combined"));
+    // Production structured logging without leaking sensitive payloads
+    app.use(
+      morgan(
+        JSON.stringify({
+          reqId: ":req-id",
+          timestamp: ":date[iso]",
+          method: ":method",
+          url: ":url",
+          status: ":status",
+          durationMs: ":response-time",
+          bytes: ":res[content-length]",
+          ip: ":remote-addr",
+          userAgent: ":user-agent",
+        }),
+      ),
+    );
   }
 
   // Safe Request Body Parsers (prevent body size exhaustion attacks)
@@ -115,7 +161,8 @@ export const createApp = (): Express => {
         rateLimiting: "active",
         rbac: "enforced",
       },
-      apiDocs: `${config.apiPrefix}/health`,
+      apiDocs: `${config.apiPrefix}/docs`,
+      health: `${config.apiPrefix}/health`,
     });
   });
 
