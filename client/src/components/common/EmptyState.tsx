@@ -30,9 +30,12 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
         <Icon className="w-8 h-8 stroke-[1.5]" />
       </div>
       <h3 className="text-lg font-semibold text-white mb-2">{title}</h3>
-      <p className="text-sm text-slate-400 leading-relaxed mb-6 max-w-xs">{description}</p>
-      {actionLabel && (actionHref || onAction) && (
-        actionHref ? (
+      <p className="text-sm text-slate-400 leading-relaxed mb-6 max-w-xs">
+        {description}
+      </p>
+      {actionLabel &&
+        (actionHref || onAction) &&
+        (actionHref ? (
           <Link
             to={actionHref}
             className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-medium bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold transition-all shadow-md shadow-sky-500/20 active:scale-95"
@@ -47,8 +50,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
           >
             {actionLabel}
           </button>
-        )
-      )}
+        ))}
     </div>
   );
 };

@@ -21,13 +21,22 @@ export const IndustryLayout: React.FC = () => {
 
   const navItems = [
     { name: "Dashboard", path: "/industry/dashboard", icon: LayoutDashboard },
-    { name: "Post Opportunity", path: "/industry/create-opportunity", icon: PlusCircle },
-    { name: "Active Postings", path: "/industry/opportunities", icon: Briefcase },
+    {
+      name: "Post Opportunity",
+      path: "/industry/create-opportunity",
+      icon: PlusCircle,
+    },
+    {
+      name: "Active Postings",
+      path: "/industry/opportunities",
+      icon: Briefcase,
+    },
     { name: "Applicant Pipeline", path: "/industry/applicants", icon: Users },
     { name: "Company Profile", path: "/industry/profile", icon: Settings },
   ];
 
-  const companyName = user?.company?.companyName || user?.email.split("@")[0] || "Company";
+  const companyName =
+    user?.company?.companyName || user?.email.split("@")[0] || "Company";
 
   return (
     <div className="min-h-screen bg-[#060a14] text-slate-100 flex flex-col md:flex-row">
@@ -41,11 +50,17 @@ export const IndustryLayout: React.FC = () => {
         </Link>
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          aria-label={sidebarOpen ? "Close navigation menu" : "Open navigation menu"}
+          aria-label={
+            sidebarOpen ? "Close navigation menu" : "Open navigation menu"
+          }
           aria-expanded={sidebarOpen}
           className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors focus:ring-2 focus:ring-indigo-500 focus:outline-none"
         >
-          {sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          {sidebarOpen ? (
+            <X className="w-6 h-6" />
+          ) : (
+            <Menu className="w-6 h-6" />
+          )}
         </button>
       </header>
 
@@ -61,7 +76,9 @@ export const IndustryLayout: React.FC = () => {
       {/* Sidebar */}
       <aside
         className={`fixed md:sticky top-0 left-0 z-30 h-screen w-64 border-r border-slate-850 bg-[#080d1a] flex flex-col justify-between transition-transform duration-200 ease-in-out ${
-          sidebarOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full md:translate-x-0"
+          sidebarOpen
+            ? "translate-x-0 shadow-2xl"
+            : "-translate-x-full md:translate-x-0"
         }`}
         aria-label="Recruiter navigation"
       >
@@ -84,7 +101,10 @@ export const IndustryLayout: React.FC = () => {
             </Link>
           </div>
 
-          <nav className="p-4 space-y-1.5 overflow-y-auto max-h-[calc(100vh-230px)]" aria-label="Recruiter primary navigation">
+          <nav
+            className="p-4 space-y-1.5 overflow-y-auto max-h-[calc(100vh-230px)]"
+            aria-label="Recruiter primary navigation"
+          >
             {navItems.map((item) => {
               const Icon = item.icon;
               return (
@@ -103,10 +123,14 @@ export const IndustryLayout: React.FC = () => {
                   {({ isActive }) => (
                     <>
                       <div className="flex items-center space-x-3">
-                        <Icon className={`w-4 h-4 ${isActive ? "text-indigo-400" : "text-slate-400"}`} />
+                        <Icon
+                          className={`w-4 h-4 ${isActive ? "text-indigo-400" : "text-slate-400"}`}
+                        />
                         <span>{item.name}</span>
                       </div>
-                      {isActive && <ChevronRight className="w-3.5 h-3.5 text-indigo-400" />}
+                      {isActive && (
+                        <ChevronRight className="w-3.5 h-3.5 text-indigo-400" />
+                      )}
                     </>
                   )}
                 </NavLink>
@@ -123,10 +147,14 @@ export const IndustryLayout: React.FC = () => {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center space-x-1.5">
-                <p className="text-xs font-semibold text-white truncate">{companyName}</p>
+                <p className="text-xs font-semibold text-white truncate">
+                  {companyName}
+                </p>
                 <ShieldCheck className="w-3.5 h-3.5 text-sky-400 flex-shrink-0" />
               </div>
-              <p className="text-[11px] text-slate-400 truncate">{user?.email}</p>
+              <p className="text-[11px] text-slate-400 truncate">
+                {user?.email}
+              </p>
             </div>
           </div>
           <button
@@ -149,8 +177,12 @@ export const IndustryLayout: React.FC = () => {
           </div>
           <div className="flex items-center space-x-4">
             <div className="text-right">
-              <div className="text-xs font-medium text-white">{companyName}</div>
-              <div className="text-[10px] text-indigo-400">Verified Corporate Partner</div>
+              <div className="text-xs font-medium text-white">
+                {companyName}
+              </div>
+              <div className="text-[10px] text-indigo-400">
+                Verified Corporate Partner
+              </div>
             </div>
           </div>
         </header>

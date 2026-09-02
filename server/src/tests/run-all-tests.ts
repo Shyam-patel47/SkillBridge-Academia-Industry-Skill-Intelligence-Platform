@@ -73,6 +73,10 @@ const testSuites = [
     name: "OpenAPI 3.0 & Swagger UI Documentation",
     file: "api-docs.test.ts",
   },
+  {
+    name: "Performance Optimization & Pagination",
+    file: "performance-optimization.test.ts",
+  },
 ];
 
 console.log(

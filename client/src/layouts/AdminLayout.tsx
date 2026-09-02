@@ -20,11 +20,27 @@ export const AdminLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const navItems = [
-    { name: "System Overview", path: "/admin/dashboard", icon: LayoutDashboard },
+    {
+      name: "System Overview",
+      path: "/admin/dashboard",
+      icon: LayoutDashboard,
+    },
     { name: "Skill Taxonomy", path: "/admin/skills", icon: Layers },
-    { name: "Company Verifications", path: "/admin/companies", icon: Building2 },
-    { name: "Institution Verifications", path: "/admin/institutions", icon: GraduationCap },
-    { name: "Opportunity Moderation", path: "/admin/opportunities", icon: FileCheck },
+    {
+      name: "Company Verifications",
+      path: "/admin/companies",
+      icon: Building2,
+    },
+    {
+      name: "Institution Verifications",
+      path: "/admin/institutions",
+      icon: GraduationCap,
+    },
+    {
+      name: "Opportunity Moderation",
+      path: "/admin/opportunities",
+      icon: FileCheck,
+    },
     { name: "Platform Audit Logs", path: "/admin/audit-logs", icon: History },
   ];
 
@@ -39,11 +55,17 @@ export const AdminLayout: React.FC = () => {
         </Link>
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          aria-label={sidebarOpen ? "Close navigation menu" : "Open navigation menu"}
+          aria-label={
+            sidebarOpen ? "Close navigation menu" : "Open navigation menu"
+          }
           aria-expanded={sidebarOpen}
           className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors focus:ring-2 focus:ring-amber-500"
         >
-          {sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          {sidebarOpen ? (
+            <X className="w-6 h-6" />
+          ) : (
+            <Menu className="w-6 h-6" />
+          )}
         </button>
       </header>
 
@@ -58,7 +80,9 @@ export const AdminLayout: React.FC = () => {
 
       <aside
         className={`fixed md:sticky top-0 left-0 z-30 h-screen w-64 border-r border-slate-850 bg-[#080d1a] flex flex-col justify-between transition-transform duration-200 ${
-          sidebarOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full md:translate-x-0"
+          sidebarOpen
+            ? "translate-x-0 shadow-2xl"
+            : "-translate-x-full md:translate-x-0"
         }`}
         aria-label="Super admin navigation"
       >
@@ -81,7 +105,10 @@ export const AdminLayout: React.FC = () => {
             </Link>
           </div>
 
-          <nav className="p-4 space-y-1.5 overflow-y-auto max-h-[calc(100vh-230px)]" aria-label="Admin primary navigation">
+          <nav
+            className="p-4 space-y-1.5 overflow-y-auto max-h-[calc(100vh-230px)]"
+            aria-label="Admin primary navigation"
+          >
             {navItems.map((item) => {
               const Icon = item.icon;
               return (
@@ -100,10 +127,14 @@ export const AdminLayout: React.FC = () => {
                   {({ isActive }) => (
                     <>
                       <div className="flex items-center space-x-3">
-                        <Icon className={`w-4 h-4 ${isActive ? "text-amber-400" : "text-slate-400"}`} />
+                        <Icon
+                          className={`w-4 h-4 ${isActive ? "text-amber-400" : "text-slate-400"}`}
+                        />
                         <span>{item.name}</span>
                       </div>
-                      {isActive && <ChevronRight className="w-3.5 h-3.5 text-amber-400" />}
+                      {isActive && (
+                        <ChevronRight className="w-3.5 h-3.5 text-amber-400" />
+                      )}
                     </>
                   )}
                 </NavLink>
@@ -118,8 +149,12 @@ export const AdminLayout: React.FC = () => {
               SA
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-white truncate">Platform Administrator</p>
-              <p className="text-[11px] text-slate-400 truncate">{user?.email}</p>
+              <p className="text-xs font-semibold text-white truncate">
+                Platform Administrator
+              </p>
+              <p className="text-[11px] text-slate-400 truncate">
+                {user?.email}
+              </p>
             </div>
           </div>
           <button

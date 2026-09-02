@@ -19,14 +19,37 @@ export const InstitutionLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const navItems = [
-    { name: "Analytics Overview", path: "/institution/dashboard", icon: LayoutDashboard },
-    { name: "Student Skill Matrix", path: "/institution/students", icon: Users },
-    { name: "Demand vs Supply Gap", path: "/institution/demand-matrix", icon: BarChart3 },
-    { name: "Curriculum Insights", path: "/institution/curriculum", icon: LineChart },
-    { name: "Placement Readiness", path: "/institution/placements", icon: CheckCircle2 },
+    {
+      name: "Analytics Overview",
+      path: "/institution/dashboard",
+      icon: LayoutDashboard,
+    },
+    {
+      name: "Student Skill Matrix",
+      path: "/institution/students",
+      icon: Users,
+    },
+    {
+      name: "Demand vs Supply Gap",
+      path: "/institution/demand-matrix",
+      icon: BarChart3,
+    },
+    {
+      name: "Curriculum Insights",
+      path: "/institution/curriculum",
+      icon: LineChart,
+    },
+    {
+      name: "Placement Readiness",
+      path: "/institution/placements",
+      icon: CheckCircle2,
+    },
   ];
 
-  const instName = user?.institution?.institutionName || user?.email.split("@")[0] || "Institution";
+  const instName =
+    user?.institution?.institutionName ||
+    user?.email.split("@")[0] ||
+    "Institution";
 
   return (
     <div className="min-h-screen bg-[#060a14] text-slate-100 flex flex-col md:flex-row">
@@ -39,11 +62,17 @@ export const InstitutionLayout: React.FC = () => {
         </Link>
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          aria-label={sidebarOpen ? "Close navigation menu" : "Open navigation menu"}
+          aria-label={
+            sidebarOpen ? "Close navigation menu" : "Open navigation menu"
+          }
           aria-expanded={sidebarOpen}
           className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors focus:ring-2 focus:ring-teal-500"
         >
-          {sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          {sidebarOpen ? (
+            <X className="w-6 h-6" />
+          ) : (
+            <Menu className="w-6 h-6" />
+          )}
         </button>
       </header>
 
@@ -58,7 +87,9 @@ export const InstitutionLayout: React.FC = () => {
 
       <aside
         className={`fixed md:sticky top-0 left-0 z-30 h-screen w-64 border-r border-slate-850 bg-[#080d1a] flex flex-col justify-between transition-transform duration-200 ${
-          sidebarOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full md:translate-x-0"
+          sidebarOpen
+            ? "translate-x-0 shadow-2xl"
+            : "-translate-x-full md:translate-x-0"
         }`}
         aria-label="Institution navigation"
       >
@@ -81,7 +112,10 @@ export const InstitutionLayout: React.FC = () => {
             </Link>
           </div>
 
-          <nav className="p-4 space-y-1.5 overflow-y-auto max-h-[calc(100vh-230px)]" aria-label="Institution primary navigation">
+          <nav
+            className="p-4 space-y-1.5 overflow-y-auto max-h-[calc(100vh-230px)]"
+            aria-label="Institution primary navigation"
+          >
             {navItems.map((item) => {
               const Icon = item.icon;
               return (
@@ -100,10 +134,14 @@ export const InstitutionLayout: React.FC = () => {
                   {({ isActive }) => (
                     <>
                       <div className="flex items-center space-x-3">
-                        <Icon className={`w-4 h-4 ${isActive ? "text-teal-400" : "text-slate-400"}`} />
+                        <Icon
+                          className={`w-4 h-4 ${isActive ? "text-teal-400" : "text-slate-400"}`}
+                        />
                         <span>{item.name}</span>
                       </div>
-                      {isActive && <ChevronRight className="w-3.5 h-3.5 text-teal-400" />}
+                      {isActive && (
+                        <ChevronRight className="w-3.5 h-3.5 text-teal-400" />
+                      )}
                     </>
                   )}
                 </NavLink>
@@ -118,8 +156,12 @@ export const InstitutionLayout: React.FC = () => {
               {instName.slice(0, 2)}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-white truncate">{instName}</p>
-              <p className="text-[11px] text-slate-400 truncate">{user?.email}</p>
+              <p className="text-xs font-semibold text-white truncate">
+                {instName}
+              </p>
+              <p className="text-[11px] text-slate-400 truncate">
+                {user?.email}
+              </p>
             </div>
           </div>
           <button
@@ -142,7 +184,9 @@ export const InstitutionLayout: React.FC = () => {
           <div className="flex items-center space-x-4">
             <div className="text-right">
               <div className="text-xs font-medium text-white">{instName}</div>
-              <div className="text-[10px] text-teal-400">Institutional Skill Intelligence</div>
+              <div className="text-[10px] text-teal-400">
+                Institutional Skill Intelligence
+              </div>
             </div>
           </div>
         </header>

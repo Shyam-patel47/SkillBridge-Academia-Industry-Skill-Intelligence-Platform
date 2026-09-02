@@ -1,5 +1,11 @@
 import React from "react";
-import { CheckCircle2, AlertCircle, AlertTriangle, Info, X } from "lucide-react";
+import {
+  CheckCircle2,
+  AlertCircle,
+  AlertTriangle,
+  Info,
+  X,
+} from "lucide-react";
 
 export type BannerVariant = "success" | "error" | "warning" | "info";
 
@@ -13,7 +19,12 @@ interface NotificationBannerProps {
 
 const variantStyles: Record<
   BannerVariant,
-  { bg: string; border: string; text: string; icon: React.FC<{ className?: string }> }
+  {
+    bg: string;
+    border: string;
+    text: string;
+    icon: React.FC<{ className?: string }>;
+  }
 > = {
   success: {
     bg: "bg-emerald-950/40",
@@ -59,7 +70,9 @@ export const NotificationBanner: React.FC<NotificationBannerProps> = ({
       <div className="flex items-start space-x-3">
         <Icon className="w-5 h-5 flex-shrink-0 mt-0.5" />
         <div>
-          {title && <h4 className="text-sm font-semibold text-white mb-0.5">{title}</h4>}
+          {title && (
+            <h4 className="text-sm font-semibold text-white mb-0.5">{title}</h4>
+          )}
           <p className="text-xs leading-relaxed opacity-90">{message}</p>
         </div>
       </div>

@@ -31,7 +31,11 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
         className={`${sizeClasses[size]} text-sky-400 animate-spin`}
         aria-hidden="true"
       />
-      {label && <span className="text-xs font-medium text-slate-400 tracking-wide">{label}</span>}
+      {label && (
+        <span className="text-xs font-medium text-slate-400 tracking-wide">
+          {label}
+        </span>
+      )}
       <span className="sr-only">{label}</span>
     </div>
   );

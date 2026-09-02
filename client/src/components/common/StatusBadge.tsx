@@ -1,5 +1,11 @@
 import React from "react";
-import { CheckCircle, Clock, AlertTriangle, XCircle, Award } from "lucide-react";
+import {
+  CheckCircle,
+  Clock,
+  AlertTriangle,
+  XCircle,
+  Award,
+} from "lucide-react";
 
 export type StatusType =
   | "APPLIED"
@@ -21,7 +27,13 @@ interface StatusBadgeProps {
 
 const statusConfig: Record<
   string,
-  { label: string; bg: string; text: string; border: string; icon: React.FC<{ className?: string }> }
+  {
+    label: string;
+    bg: string;
+    text: string;
+    border: string;
+    icon: React.FC<{ className?: string }>;
+  }
 > = {
   APPLIED: {
     label: "Applied",
@@ -102,7 +114,10 @@ const statusConfig: Record<
   },
 };
 
-export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, className = "" }) => {
+export const StatusBadge: React.FC<StatusBadgeProps> = ({
+  status,
+  className = "",
+}) => {
   const config = statusConfig[status] || {
     label: status,
     bg: "bg-slate-500/10",
