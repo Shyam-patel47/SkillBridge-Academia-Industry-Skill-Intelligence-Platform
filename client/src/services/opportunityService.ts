@@ -137,4 +137,42 @@ export const opportunityService = {
     }>("/opportunities", { params });
     return res.data.data.opportunities;
   },
+
+  async parseJobDescription(payload: {
+    jobDescription: string;
+  }): Promise<ParsedJobDescriptionResult> {
+    const res = await apiClient.post<{
+      success: boolean;
+      data: { parsed: ParsedJobDescriptionResult };
+    }>("/opportunities/parse-jd", payload);
+    return res.data.data.parsed;
+  },
 };
+
+export interface ParsedSkillRequirement {
+  skillId: string;
+  skillName: string;
+  skillSlug: string;
+  category: string;
+  proficiency: "BEGINNER" | "INTERMEDIATE" | "ADVANCED";
+  minScore: number;
+  isMandatory: boolean;
+  weight: number;
+  confidenceScore: number;
+  contextSnippet: string;
+}
+
+export interface ParsedJobDescriptionResult {
+  suggestedTitle: string;
+  suggestedType: "INTERNSHIP" | "ENTRY_LEVEL_JOB";
+  suggestedWorkMode: "REMOTE" | "HYBRID" | "ON_SITE";
+  suggestedLocation: string | null;
+  suggestedDuration: string | null;
+  suggestedMinCgpa: number;
+  suggestedEligibleBranches: string[];
+  suggestedEligibleGradYears: number[];
+  suggestedSkills: ParsedSkillRequirement[];
+  eligibilityKeywords: string[];
+  rawTextLength: number;
+  disclaimer: string;
+}

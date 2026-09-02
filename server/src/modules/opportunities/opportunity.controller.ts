@@ -250,6 +250,28 @@ export class OpportunityController {
       next(error);
     }
   }
+
+  async parseJobDescription(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const userId = req.user!.id;
+      const parsed = await opportunityService.parseJobDescription(
+        userId,
+        req.body,
+      );
+      sendSuccess(
+        res,
+        { parsed },
+        "Job description parsed and skills extracted successfully",
+        200,
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export const opportunityController = new OpportunityController();

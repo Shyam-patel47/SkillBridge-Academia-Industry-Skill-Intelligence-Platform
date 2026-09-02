@@ -97,3 +97,16 @@ export interface UpdateOpportunityInput {
     weight: number;
   }>;
 }
+
+export const parseJobDescriptionSchema = z.object({
+  body: z.object({
+    jobDescription: z
+      .string()
+      .min(10, "Job description must be at least 10 characters")
+      .max(10000, "Job description cannot exceed 10,000 characters"),
+  }),
+});
+
+export type ParseJobDescriptionInput = z.infer<
+  typeof parseJobDescriptionSchema
+>["body"];

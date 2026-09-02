@@ -11,6 +11,7 @@ import { studentService } from "../students/student.service.js";
 import {
   CreateOpportunityInput,
   UpdateOpportunityInput,
+  ParseJobDescriptionInput,
 } from "./opportunity.schema.js";
 import {
   OpportunityMatchingEngine,
@@ -21,6 +22,7 @@ import {
   StudentMatchProfile,
   OpportunityMatchInput,
 } from "./opportunity-matching.engine.js";
+import { JobDescriptionParserEngine } from "./jd-parser.engine.js";
 
 function slugify(text: string): string {
   return text
@@ -812,6 +814,27 @@ export class OpportunityService {
     });
 
     return opportunities;
+  }
+
+  /**
+   * Parse raw job description text and extract suggested required skills, proficiency, eligibility & metadata
+   */
+  async parseJobDescription(userId: string, input: ParseJobDescriptionInput) {
+    // Verify recruiter company profile
+    await companyService.getProfileByUserId(userId);
+
+    // Fetch full skill taxonomy from database
+    const taxonomySkills = await prisma.skill.findMany({
+      include: {
+        category: { select: { name: true } },
+      },
+    });
+
+    const parsed = JobDescriptionParserEngine.parse(
+      input.jobDescription,
+      taxonomySkills,
+    );
+    return parsed;
   }
 }
 

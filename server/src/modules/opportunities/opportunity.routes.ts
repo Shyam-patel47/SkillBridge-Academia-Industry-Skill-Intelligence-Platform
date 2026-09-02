@@ -11,9 +11,19 @@ import {
   createOpportunitySchema,
   updateOpportunitySchema,
   togglePublishSchema,
+  parseJobDescriptionSchema,
 } from "./opportunity.schema.js";
 
 const router = Router();
+
+// AI Job Description Extraction (Protected: INDUSTRY, SUPER_ADMIN)
+router.post(
+  "/parse-jd",
+  authenticate,
+  authorizeRoles(UserRole.INDUSTRY, UserRole.SUPER_ADMIN),
+  validateRequest(parseJobDescriptionSchema),
+  (req, res, next) => opportunityController.parseJobDescription(req, res, next),
+);
 
 // Student Opportunity Discovery Feed (Protected: STUDENT, SUPER_ADMIN)
 router.get(
