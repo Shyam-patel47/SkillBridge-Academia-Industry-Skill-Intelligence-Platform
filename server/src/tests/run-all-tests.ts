@@ -77,6 +77,10 @@ const testSuites = [
     name: "Performance Optimization & Pagination",
     file: "performance-optimization.test.ts",
   },
+  {
+    name: "Production Readiness & Health Probe",
+    file: "production-readiness.test.ts",
+  },
 ];
 
 console.log(
