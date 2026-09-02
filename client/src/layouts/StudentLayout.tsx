@@ -10,6 +10,7 @@ import {
   Briefcase,
   FileText,
   UserCheck,
+  FileSearch,
   LogOut,
   Menu,
   X,
@@ -25,25 +26,21 @@ export const StudentLayout: React.FC = () => {
   const navItems = [
     { name: "Dashboard", path: "/student/dashboard", icon: LayoutDashboard },
     { name: "My Profile", path: "/student/profile", icon: User },
-    {
-      name: "Skill Assessment",
-      path: "/student/assessments",
-      icon: BrainCircuit,
-    },
+    { name: "Skill Assessment", path: "/student/assessments", icon: BrainCircuit },
     { name: "Skill Profile & Gaps", path: "/student/skills", icon: Target },
     { name: "Career Pathways", path: "/student/careers", icon: Compass },
     { name: "Opportunities", path: "/student/opportunities", icon: Briefcase },
     { name: "My Applications", path: "/student/applications", icon: FileText },
     { name: "Digital Portfolio", path: "/student/portfolio", icon: UserCheck },
+    { name: "AI Resume Extractor", path: "/student/resume-extractor", icon: FileSearch },
   ];
 
-  const studentName =
-    user?.student?.fullName || user?.email.split("@")[0] || "Student";
+  const studentName = user?.student?.fullName || user?.email.split("@")[0] || "Student";
 
   return (
     <div className="min-h-screen bg-[#060a14] text-slate-100 flex flex-col md:flex-row">
       {/* Mobile Top Header */}
-      <div className="md:hidden flex items-center justify-between px-4 py-3 border-b border-slate-855 bg-slate-950/90 backdrop-blur-md sticky top-0 z-40">
+      <header className="md:hidden flex items-center justify-between px-4 py-3 border-b border-slate-850 bg-slate-950/90 backdrop-blur-md sticky top-0 z-40">
         <Link to="/" className="flex items-center space-x-2">
           <div className="w-8 h-8 rounded-lg bg-sky-500/20 border border-sky-500/30 flex items-center justify-center">
             <Sparkles className="w-4 h-4 text-sky-400" />
@@ -53,22 +50,30 @@ export const StudentLayout: React.FC = () => {
         <div className="flex items-center space-x-2">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+            aria-label={sidebarOpen ? "Close navigation menu" : "Open navigation menu"}
+            aria-expanded={sidebarOpen}
+            className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors focus:ring-2 focus:ring-sky-500 focus:outline-none"
           >
-            {sidebarOpen ? (
-              <X className="w-6 h-6" />
-            ) : (
-              <Menu className="w-6 h-6" />
-            )}
+            {sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
-      </div>
+      </header>
+
+      {/* Mobile Backdrop */}
+      {sidebarOpen && (
+        <div
+          onClick={() => setSidebarOpen(false)}
+          className="fixed inset-0 z-25 bg-slate-950/70 backdrop-blur-sm md:hidden transition-opacity"
+          aria-hidden="true"
+        />
+      )}
 
       {/* Sidebar */}
       <aside
         className={`fixed md:sticky top-0 left-0 z-30 h-screen w-64 border-r border-slate-850 bg-[#080d1a] flex flex-col justify-between transition-transform duration-200 ease-in-out ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+          sidebarOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full md:translate-x-0"
         }`}
+        aria-label="Sidebar navigation"
       >
         <div>
           {/* Logo & Header */}
@@ -91,7 +96,7 @@ export const StudentLayout: React.FC = () => {
           </div>
 
           {/* Navigation Links */}
-          <nav className="p-4 space-y-1.5 overflow-y-auto max-h-[calc(100vh-220px)]">
+          <nav className="p-4 space-y-1.5 overflow-y-auto max-h-[calc(100vh-230px)]" aria-label="Student primary navigation">
             {navItems.map((item) => {
               const Icon = item.icon;
               return (
@@ -110,14 +115,10 @@ export const StudentLayout: React.FC = () => {
                   {({ isActive }) => (
                     <>
                       <div className="flex items-center space-x-3">
-                        <Icon
-                          className={`w-4 h-4 ${isActive ? "text-sky-400" : "text-slate-400"}`}
-                        />
+                        <Icon className={`w-4 h-4 ${isActive ? "text-sky-400" : "text-slate-400"}`} />
                         <span>{item.name}</span>
                       </div>
-                      {isActive && (
-                        <ChevronRight className="w-3.5 h-3.5 text-sky-400" />
-                      )}
+                      {isActive && <ChevronRight className="w-3.5 h-3.5 text-sky-400" />}
                     </>
                   )}
                 </NavLink>
@@ -133,17 +134,13 @@ export const StudentLayout: React.FC = () => {
               {studentName.slice(0, 2)}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-white truncate">
-                {studentName}
-              </p>
-              <p className="text-[11px] text-slate-400 truncate">
-                {user?.email}
-              </p>
+              <p className="text-xs font-semibold text-white truncate">{studentName}</p>
+              <p className="text-[11px] text-slate-400 truncate">{user?.email}</p>
             </div>
           </div>
           <button
             onClick={() => logout()}
-            className="w-full flex items-center justify-center space-x-2 px-3 py-2 rounded-xl text-xs font-medium text-rose-400 hover:bg-rose-500/10 border border-rose-500/20 transition-colors"
+            className="w-full flex items-center justify-center space-x-2 px-3 py-2 rounded-xl text-xs font-medium text-rose-400 hover:bg-rose-500/10 border border-rose-500/20 transition-colors focus:ring-2 focus:ring-rose-500/50"
           >
             <LogOut className="w-3.5 h-3.5" />
             <span>Sign Out</span>
@@ -161,18 +158,17 @@ export const StudentLayout: React.FC = () => {
             </span>
           </div>
           <div className="flex items-center space-x-4">
-            <button className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors relative">
+            <button
+              aria-label="View notifications"
+              className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors relative focus:ring-2 focus:ring-sky-500"
+            >
               <Bell className="w-4 h-4" />
               <span className="w-2 h-2 rounded-full bg-sky-400 absolute top-1.5 right-1.5"></span>
             </button>
             <div className="h-4 w-px bg-slate-800"></div>
             <div className="text-right">
-              <div className="text-xs font-medium text-white">
-                {studentName}
-              </div>
-              <div className="text-[10px] text-slate-400">
-                {user?.student?.college || "Apex Institute"}
-              </div>
+              <div className="text-xs font-medium text-white">{studentName}</div>
+              <div className="text-[10px] text-slate-400">{user?.student?.college || "SkillBridge Student"}</div>
             </div>
           </div>
         </header>
