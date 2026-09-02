@@ -69,6 +69,10 @@ const testSuites = [
     name: "End-to-End Critical Workflow (Student & Recruiter)",
     file: "e2e-critical-workflow.test.ts",
   },
+  {
+    name: "OpenAPI 3.0 & Swagger UI Documentation",
+    file: "api-docs.test.ts",
+  },
 ];
 
 console.log(

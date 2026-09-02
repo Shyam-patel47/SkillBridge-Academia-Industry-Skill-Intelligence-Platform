@@ -1,0 +1,755 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "SkillBridge API — Academia-Industry Skill Intelligence & Opportunity Matching Platform",
+    "description": "Production REST API for SkillBridge — powering deterministic skill assessment, multi-factor opportunity matching, career gap intelligence, institutional supply vs demand analytics, and AI resume/JD assistance.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "SkillBridge Core Engineering",
+      "url": "https://github.com/Shyam-patel47/SkillBridge-Academia-Industry-Skill-Intelligence-Platform"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5000/api/v1",
+      "description": "Local Development Server"
+    },
+    {
+      "url": "https://api.skillbridge.dev/api/v1",
+      "description": "Production API Server"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT Access Token obtained from /auth/login or /auth/register"
+      }
+    },
+    "schemas": {
+      "StandardResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "message": {
+            "type": "string",
+            "example": "Operation completed successfully"
+          },
+          "data": { "type": "object" },
+          "meta": { "type": "object" }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": false },
+          "error": {
+            "type": "object",
+            "properties": {
+              "message": {
+                "type": "string",
+                "example": "Unauthorized or validation failed"
+              },
+              "code": { "type": "string", "example": "VALIDATION_ERROR" },
+              "details": { "type": "array", "items": { "type": "object" } }
+            }
+          }
+        }
+      },
+      "UserRole": {
+        "type": "string",
+        "enum": ["STUDENT", "INDUSTRY", "INSTITUTION_ADMIN", "SUPER_ADMIN"]
+      },
+      "ProficiencyLevel": {
+        "type": "string",
+        "enum": ["BEGINNER", "INTERMEDIATE", "ADVANCED", "EXPERT"]
+      },
+      "ApplicationStatus": {
+        "type": "string",
+        "enum": [
+          "APPLIED",
+          "SHORTLISTED",
+          "INTERVIEW",
+          "OFFERED",
+          "REJECTED",
+          "WITHDRAWN"
+        ]
+      }
+    }
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health Check & Database Connectivity",
+        "tags": ["System"],
+        "security": [],
+        "responses": {
+          "200": { "description": "Server and database active" }
+        }
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "summary": "Register a new user account",
+        "tags": ["Authentication"],
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password", "role"],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "student@skillbridge.dev"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 8,
+                    "example": "SecurePassword123!"
+                  },
+                  "role": { "$ref": "#/components/schemas/UserRole" },
+                  "firstName": { "type": "string", "example": "Aarav" },
+                  "lastName": { "type": "string", "example": "Sharma" },
+                  "companyName": {
+                    "type": "string",
+                    "example": "CloudScale Technologies"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User created successfully with access & refresh tokens"
+          },
+          "409": { "description": "Email already registered" },
+          "422": { "description": "Input validation error" }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "summary": "Authenticate user & obtain JWT tokens",
+        "tags": ["Authentication"],
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "student@skillbridge.dev"
+                  },
+                  "password": {
+                    "type": "string",
+                    "example": "SecurePassword123!"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Login successful, tokens returned" },
+          "401": { "description": "Invalid credentials" }
+        }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "summary": "Rotate refresh token & obtain new access token",
+        "tags": ["Authentication"],
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["refreshToken"],
+                "properties": {
+                  "refreshToken": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Token rotated successfully" },
+          "401": { "description": "Invalid or expired refresh token" }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "summary": "Get authenticated user profile details",
+        "tags": ["Authentication"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "User profile returned" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/students/profile": {
+      "get": {
+        "summary": "Get student academic and skills profile",
+        "tags": ["Students"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Student profile returned" }
+        }
+      },
+      "put": {
+        "summary": "Update student academic attributes (CGPA, Branch, Grad Year)",
+        "tags": ["Students"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "cgpa": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 10,
+                    "example": 8.85
+                  },
+                  "branch": {
+                    "type": "string",
+                    "example": "Computer Science & Engineering"
+                  },
+                  "graduationYear": { "type": "integer", "example": 2025 },
+                  "bio": { "type": "string" },
+                  "careerInterests": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Student profile updated" }
+        }
+      }
+    },
+    "/students/skills/summary": {
+      "get": {
+        "summary": "Get verified student skill scores and category breakdowns",
+        "tags": ["Students"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Categorized skill scores and evidence metrics"
+          }
+        }
+      }
+    },
+    "/skills": {
+      "get": {
+        "summary": "List all taxonomy skills and categories",
+        "tags": ["Skills"],
+        "security": [],
+        "responses": {
+          "200": { "description": "List of all skills grouped by category" }
+        }
+      }
+    },
+    "/skills/categories": {
+      "get": {
+        "summary": "List skill taxonomy categories",
+        "tags": ["Skills"],
+        "security": [],
+        "responses": {
+          "200": { "description": "List of categories" }
+        }
+      },
+      "post": {
+        "summary": "Create skill category (Super Admin only)",
+        "tags": ["Skills"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "201": { "description": "Category created" },
+          "403": { "description": "Forbidden: Requires SUPER_ADMIN" }
+        }
+      }
+    },
+    "/assessments": {
+      "get": {
+        "summary": "Catalog of available benchmark skill assessments",
+        "tags": ["Assessments"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "List of skill assessments" }
+        }
+      }
+    },
+    "/assessments/{id}/session": {
+      "get": {
+        "summary": "Start an assessment session (correct answers sanitized)",
+        "tags": ["Assessments"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Assessment questions and options" }
+        }
+      }
+    },
+    "/assessments/{id}/submit": {
+      "post": {
+        "summary": "Submit answers, calculate deterministic score, and auto-update verified StudentSkills",
+        "tags": ["Assessments"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["answers"],
+                "properties": {
+                  "answers": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["questionId", "selectedOptionId"],
+                      "properties": {
+                        "questionId": { "type": "string" },
+                        "selectedOptionId": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Evaluated score, proficiency tier, and updated skill profile"
+          }
+        }
+      }
+    },
+    "/careers": {
+      "get": {
+        "summary": "List industry career pathways and benchmark skill matrices",
+        "tags": ["Career Intelligence"],
+        "security": [],
+        "responses": {
+          "200": { "description": "List of career pathways" }
+        }
+      }
+    },
+    "/careers/recommendations": {
+      "get": {
+        "summary": "Get personalized career pathway recommendations with AI explanations",
+        "tags": ["Career Intelligence"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Ranked career recommendations with readiness tier & AI explanation"
+          }
+        }
+      }
+    },
+    "/careers/{id}/gap-analysis": {
+      "get": {
+        "summary": "Diagnose skill gaps against target career role benchmark",
+        "tags": ["Career Intelligence"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Compatibility score, missing skills, gap matrix & AI explanation"
+          }
+        }
+      }
+    },
+    "/learning/recommendations": {
+      "get": {
+        "summary": "Get deficit-ranked learning resources to close target skill gaps",
+        "tags": ["Learning Recommendations"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Curated courses, certifications, and resources"
+          }
+        }
+      }
+    },
+    "/companies/profile": {
+      "get": {
+        "summary": "Get recruiter company profile",
+        "tags": ["Industry & Recruiter"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Company profile details" }
+        }
+      },
+      "put": {
+        "summary": "Update recruiter company profile",
+        "tags": ["Industry & Recruiter"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Company profile updated" }
+        }
+      }
+    },
+    "/opportunities": {
+      "get": {
+        "summary": "List opportunities posted by the authenticated recruiter",
+        "tags": ["Industry & Recruiter"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "List of recruiter vacancies" }
+        }
+      },
+      "post": {
+        "summary": "Create new internship or job opportunity with skill benchmarks",
+        "tags": ["Industry & Recruiter"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["title", "type", "requiredSkills"],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "example": "Full Stack Cloud Intern"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": ["INTERNSHIP", "FULL_TIME", "PART_TIME"]
+                  },
+                  "workMode": {
+                    "type": "string",
+                    "enum": ["REMOTE", "HYBRID", "ON_SITE"]
+                  },
+                  "minCgpa": { "type": "number", "example": 7.5 },
+                  "requiredSkills": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["skillId", "minScore", "isMandatory"],
+                      "properties": {
+                        "skillId": { "type": "string" },
+                        "minScore": { "type": "number", "example": 70 },
+                        "isMandatory": { "type": "boolean" },
+                        "weight": { "type": "number", "example": 1.5 }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Opportunity published" }
+        }
+      }
+    },
+    "/opportunities/feed": {
+      "get": {
+        "summary": "Student Opportunity Discovery Feed with 5-factor real-time match scoring",
+        "tags": ["Opportunities & Matching"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "type", "in": "query", "schema": { "type": "string" } },
+          { "name": "workMode", "in": "query", "schema": { "type": "string" } },
+          { "name": "skill", "in": "query", "schema": { "type": "string" } },
+          { "name": "search", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of opportunities scored and ranked by candidate compatibility"
+          }
+        }
+      }
+    },
+    "/opportunities/{id}/match": {
+      "get": {
+        "summary": "Get explainable 5-factor matching breakdown for specific opportunity",
+        "tags": ["Opportunities & Matching"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detailed 5-factor match score and factor weights"
+          }
+        }
+      }
+    },
+    "/opportunities/parse-jd": {
+      "post": {
+        "summary": "AI Job Description Parser & Requirements Extractor",
+        "tags": ["AI Assistance"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["jobDescription"],
+                "properties": {
+                  "jobDescription": { "type": "string", "minLength": 20 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Extracted required skills, proficiency cutoffs, and eligibility keywords"
+          }
+        }
+      }
+    },
+    "/resumes/extract": {
+      "post": {
+        "summary": "AI Resume Skill Extraction & Normalization",
+        "tags": ["AI Assistance"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "resumeFile": { "type": "string", "format": "binary" },
+                  "resumeText": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Extracted candidate skills with confidence scores and evidence quotes"
+          }
+        }
+      }
+    },
+    "/applications": {
+      "get": {
+        "summary": "List student submitted applications",
+        "tags": ["Applications"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "List of student applications" }
+        }
+      },
+      "post": {
+        "summary": "Apply to opportunity with automatic 5-factor match scoring snapshot",
+        "tags": ["Applications"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["opportunityId"],
+                "properties": {
+                  "opportunityId": { "type": "string" },
+                  "coverLetter": { "type": "string" },
+                  "customResumeUrl": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Application submitted" }
+        }
+      }
+    },
+    "/applications/{id}/withdraw": {
+      "post": {
+        "summary": "Withdraw active application (Student only)",
+        "tags": ["Applications"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Application status transitioned to WITHDRAWN"
+          }
+        }
+      }
+    },
+    "/applications/opportunity/{id}/candidates": {
+      "get": {
+        "summary": "Recruiter Candidate Ranking with explainable matching and multi-dimensional filters",
+        "tags": ["Applications"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "minMatchScore",
+            "in": "query",
+            "schema": { "type": "number" }
+          },
+          { "name": "minCgpa", "in": "query", "schema": { "type": "number" } },
+          { "name": "branch", "in": "query", "schema": { "type": "string" } },
+          {
+            "name": "gradYear",
+            "in": "query",
+            "schema": { "type": "integer" }
+          },
+          { "name": "skillId", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ranked candidates in descending match score order with verified skill breakdowns"
+          }
+        }
+      }
+    },
+    "/applications/{id}/status": {
+      "patch": {
+        "summary": "Update application pipeline status (Recruiter only)",
+        "tags": ["Applications"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["status"],
+                "properties": {
+                  "status": { "$ref": "#/components/schemas/ApplicationStatus" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Pipeline status updated (SHORTLISTED, INTERVIEW, OFFERED, REJECTED)"
+          }
+        }
+      }
+    },
+    "/portfolios/me": {
+      "get": {
+        "summary": "Get student digital portfolio studio data",
+        "tags": ["Digital Portfolio"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Portfolio profile, projects, certifications, and achievements"
+          }
+        }
+      }
+    },
+    "/portfolios/public/{slug}": {
+      "get": {
+        "summary": "Get public digital portfolio by student vanity username/slug",
+        "tags": ["Digital Portfolio"],
+        "security": [],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Public portfolio details and verified skill badges"
+          },
+          "403": { "description": "Portfolio is private" },
+          "404": { "description": "Portfolio slug not found" }
+        }
+      }
+    },
+    "/institutions/analytics": {
+      "get": {
+        "summary": "Institutional Demand vs Supply Analytics Matrix & Curriculum Interventions",
+        "tags": ["Institution Analytics"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Industry demand vs student supply percentages, placement funnel rates, and intervention insights"
+          },
+          "403": {
+            "description": "Forbidden: Requires INSTITUTION_ADMIN or SUPER_ADMIN"
+          }
+        }
+      }
+    }
+  }
+}

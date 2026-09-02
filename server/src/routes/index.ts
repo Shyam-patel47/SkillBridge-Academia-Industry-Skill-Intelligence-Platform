@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { healthRoutes } from "./health.routes.js";
+import { docsRoutes } from "./docs.routes.js";
 import { authRoutes } from "../modules/auth/auth.routes.js";
 import { studentRoutes } from "../modules/students/student.routes.js";
 import { skillRoutes } from "../modules/skills/skill.routes.js";
@@ -18,6 +19,10 @@ const router = Router();
 
 // Base health route
 router.use("/health", healthRoutes);
+
+// OpenAPI Documentation & Swagger UI
+router.use("/docs", docsRoutes);
+router.use("/api-docs", docsRoutes);
 
 // Auth routes
 router.use("/auth", authRoutes);
