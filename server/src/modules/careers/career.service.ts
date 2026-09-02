@@ -8,6 +8,7 @@ import {
   StudentSkillScore,
   CareerRoleCompatibilityResult,
 } from "./skill-gap.engine.js";
+import { CareerAIExplanationService } from "./career-ai-explanation.service.js";
 import {
   CreateCareerRoleInput,
   UpdateCareerRoleInput,
@@ -66,37 +67,50 @@ export class CareerService {
     });
 
     // Evaluate compatibility for each role
-    const recommendations = careerRoles.map((role) => {
-      const benchmarkSkills: BenchmarkSkill[] = role.requiredSkills.map(
-        (rs) => ({
-          skillId: rs.skillId,
-          skillName: rs.skill.name,
-          categoryName: rs.skill.category?.name,
-          minProficiency: rs.minProficiency,
-          weight: rs.weight,
-          isCore: rs.isCore,
-        }),
-      );
+    const recommendations = await Promise.all(
+      careerRoles.map(async (role) => {
+        const benchmarkSkills: BenchmarkSkill[] = role.requiredSkills.map(
+          (rs) => ({
+            skillId: rs.skillId,
+            skillName: rs.skill.name,
+            categoryName: rs.skill.category?.name,
+            minProficiency: rs.minProficiency,
+            weight: rs.weight,
+            isCore: rs.isCore,
+          }),
+        );
 
-      const evaluation = calculateCareerRoleCompatibility(
-        role.title,
-        benchmarkSkills,
-        studentSkillScores,
-      );
+        const evaluation = calculateCareerRoleCompatibility(
+          role.title,
+          benchmarkSkills,
+          studentSkillScores,
+        );
 
-      return {
-        careerRole: {
-          id: role.id,
-          title: role.title,
-          slug: role.slug,
-          description: role.description,
-          category: role.category,
-          avgSalary: role.avgSalary,
-          demandLevel: role.demandLevel,
-        },
-        ...evaluation,
-      };
-    });
+        // Generate AI explanation without touching deterministic scores
+        const aiInsight = await CareerAIExplanationService.generateExplanation({
+          roleTitle: role.title,
+          compatibilityScore: evaluation.compatibilityScore,
+          readinessLevel: evaluation.readinessLevel,
+          matchingSkills: evaluation.matchingSkills,
+          skillGaps: evaluation.skillGaps,
+          missingSkills: evaluation.missingSkills,
+        });
+
+        return {
+          careerRole: {
+            id: role.id,
+            title: role.title,
+            slug: role.slug,
+            description: role.description,
+            category: role.category,
+            avgSalary: role.avgSalary,
+            demandLevel: role.demandLevel,
+          },
+          ...evaluation,
+          ...aiInsight,
+        };
+      }),
+    );
 
     // Sort by compatibility score descending
     recommendations.sort((a, b) => b.compatibilityScore - a.compatibilityScore);
@@ -167,6 +181,16 @@ export class CareerService {
       studentSkillScores,
     );
 
+    // Generate AI explanation without altering deterministic calculations
+    const aiInsight = await CareerAIExplanationService.generateExplanation({
+      roleTitle: role.title,
+      compatibilityScore: evaluation.compatibilityScore,
+      readinessLevel: evaluation.readinessLevel,
+      matchingSkills: evaluation.matchingSkills,
+      skillGaps: evaluation.skillGaps,
+      missingSkills: evaluation.missingSkills,
+    });
+
     return {
       careerRole: {
         id: role.id,
@@ -178,6 +202,7 @@ export class CareerService {
         demandLevel: role.demandLevel,
       },
       ...evaluation,
+      ...aiInsight,
     };
   }
 

@@ -17,6 +17,7 @@ import {
   AlertTriangle,
   Loader2,
   Calendar,
+  Lightbulb,
 } from "lucide-react";
 import {
   careerService,
@@ -219,6 +220,35 @@ export const CareerDetailPage: React.FC = () => {
             Benchmarks Met
           </div>
         </div>
+      </div>
+
+      {/* AI Career Intelligence Explanation Card */}
+      <div className="glass-panel p-6 sm:p-7 rounded-3xl border border-sky-500/30 bg-gradient-to-r from-slate-900 via-[#0a1a2e] to-slate-900 space-y-4 shadow-xl">
+        <div className="flex items-center justify-between">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-300 text-xs font-semibold">
+            <Sparkles className="w-3.5 h-3.5 text-sky-400" />
+            <span>AI Career Intelligence Explanation</span>
+          </div>
+          <span className="text-[10px] font-mono text-slate-500">
+            Explainable & Verifiable Guidance
+          </span>
+        </div>
+
+        <p className="text-sm text-slate-200 leading-relaxed font-sans">
+          "{analysis.aiExplanation || analysis.explanation}"
+        </p>
+
+        {analysis.priorityAction && (
+          <div className="p-3.5 rounded-2xl bg-sky-950/40 border border-sky-500/20 flex items-start gap-2.5 text-xs">
+            <Lightbulb className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+            <div>
+              <span className="font-bold text-white block">
+                Priority Recommended Action:
+              </span>
+              <span className="text-slate-300">{analysis.priorityAction}</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* STRENGTHS VS AREAS TO IMPROVE */}

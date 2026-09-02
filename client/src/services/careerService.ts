@@ -46,6 +46,10 @@ export interface CareerRecommendationItem {
   skillGaps: BenchmarkSkillItem[];
   detailedMatrix: DetailedMatrixItem[];
   explanation: string;
+  aiExplanation?: string;
+  keyStrengths?: string[];
+  priorityAction?: string;
+  isAiGenerated?: boolean;
 }
 
 export const careerService = {

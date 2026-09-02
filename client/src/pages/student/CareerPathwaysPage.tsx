@@ -289,10 +289,10 @@ export const CareerPathwaysPage: React.FC = () => {
                   <div className="p-3.5 rounded-2xl bg-[#060a14] border border-slate-850 text-xs text-slate-300 space-y-1.5">
                     <div className="flex items-center space-x-1.5 text-[11px] font-bold text-sky-400">
                       <Sparkles className="w-3.5 h-3.5" />
-                      <span>Skill Intelligence Diagnostic:</span>
+                      <span>AI Career Intelligence Insight:</span>
                     </div>
                     <p className="leading-relaxed text-slate-300">
-                      {rec.explanation}
+                      {rec.aiExplanation || rec.explanation}
                     </p>
                   </div>
                 </div>
